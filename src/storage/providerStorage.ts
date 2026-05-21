@@ -8,19 +8,31 @@ export interface ProviderSettings {
   defaultLanguage: OutputLanguage;
 }
 
-const defaultSettings: ProviderSettings = {
-  providers: [],
-  selectedProviderId: undefined,
-  defaultLanguage: "zh-CN"
-};
+function cloneValue<T>(value: T): T {
+  if (typeof globalThis.structuredClone === "function") {
+    return globalThis.structuredClone(value);
+  }
+  if (value === undefined) {
+    return value;
+  }
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+function createDefaultSettings(): ProviderSettings {
+  return {
+    providers: [],
+    selectedProviderId: undefined,
+    defaultLanguage: "zh-CN"
+  };
+}
 
 export async function getProviderSettings(): Promise<ProviderSettings> {
-  const result = await chrome.storage.local.get({ [STORAGE_KEY]: defaultSettings });
-  return result[STORAGE_KEY] as ProviderSettings;
+  const result = await chrome.storage.local.get({ [STORAGE_KEY]: createDefaultSettings() });
+  return cloneValue(result[STORAGE_KEY] as ProviderSettings);
 }
 
 export async function saveProviderSettings(settings: ProviderSettings): Promise<void> {
-  await chrome.storage.local.set({ [STORAGE_KEY]: settings });
+  await chrome.storage.local.set({ [STORAGE_KEY]: cloneValue(settings) });
 }
 
 export function selectActiveProvider(settings: ProviderSettings): ModelProviderConfig | undefined {

@@ -38,6 +38,60 @@ describe("providerStorage", () => {
     expect(settings.providers[0].name).toBe("OpenAI");
   });
 
+  it("does not mutate persisted settings when the original saved object changes", async () => {
+    const settings = {
+      providers: [
+        {
+          id: "provider-1",
+          name: "OpenAI",
+          baseUrl: "https://api.openai.com/v1",
+          apiKey: "sk-test",
+          model: "gpt-4.1-mini",
+          enabled: true
+        }
+      ],
+      selectedProviderId: "provider-1",
+      defaultLanguage: "en" as const
+    };
+
+    await saveProviderSettings(settings);
+    settings.providers[0].name = "Mutated";
+
+    const persisted = await getProviderSettings();
+    expect(persisted.providers[0].name).toBe("OpenAI");
+  });
+
+  it("does not mutate persisted settings when a loaded object changes", async () => {
+    await saveProviderSettings({
+      providers: [
+        {
+          id: "provider-1",
+          name: "OpenAI",
+          baseUrl: "https://api.openai.com/v1",
+          apiKey: "sk-test",
+          model: "gpt-4.1-mini",
+          enabled: true
+        }
+      ],
+      selectedProviderId: "provider-1",
+      defaultLanguage: "en"
+    });
+
+    const loaded = await getProviderSettings();
+    loaded.providers[0].name = "Mutated";
+
+    const persisted = await getProviderSettings();
+    expect(persisted.providers[0].name).toBe("OpenAI");
+  });
+
+  it("preserves stored null values when using object defaults", async () => {
+    await chrome.storage.local.set({ keyWithNull: null });
+
+    await expect(chrome.storage.local.get({ keyWithNull: "default" })).resolves.toEqual({
+      keyWithNull: null
+    });
+  });
+
   it("returns selected enabled provider when present", () => {
     const provider = selectActiveProvider({
       providers: [

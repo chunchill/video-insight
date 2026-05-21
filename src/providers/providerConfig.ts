@@ -32,13 +32,7 @@ export function validateProviderConfig(config: ModelProviderConfig): string[] {
 
   try {
     const url = new URL(config.baseUrl);
-    if (
-      !["http:", "https:"].includes(url.protocol) ||
-      url.username ||
-      url.password ||
-      url.search ||
-      url.hash
-    ) {
+    if (url.protocol !== "https:" || url.username || url.password || url.search || url.hash) {
       errors.push("Base URL must be a valid URL.");
     }
   } catch {

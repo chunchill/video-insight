@@ -51,6 +51,7 @@ describe("providerConfig", () => {
   });
 
   it.each([
+    "http://api.example.com/v1",
     "ftp://api.example.com/v1",
     "https://user:pass@example.com/v1",
     "https://api.example.com/v1?x=1",

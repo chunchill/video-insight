@@ -37,6 +37,28 @@ describe("parseInsightResult", () => {
     }
   });
 
+  it("returns schema fallback for valid JSON with invalid top-level shape", () => {
+    const invalidOutputs = ["[]", "null", "\"text\""];
+
+    for (const output of invalidOutputs) {
+      const result = parseInsightResult(output);
+
+      expect(result.kind).toBe("fallback");
+      if (result.kind === "fallback") {
+        expect(result.reason).toBe("Model output JSON did not match the expected insight schema.");
+      }
+    }
+  });
+
+  it("returns schema fallback when summary is not a string", () => {
+    const result = parseInsightResult(JSON.stringify({ summary: 123 }));
+
+    expect(result.kind).toBe("fallback");
+    if (result.kind === "fallback") {
+      expect(result.reason).toBe("Model output JSON did not match the expected insight schema.");
+    }
+  });
+
   it("normalizes missing arrays to empty arrays", () => {
     const result = parseInsightResult(JSON.stringify({ summary: "Short result" }));
 

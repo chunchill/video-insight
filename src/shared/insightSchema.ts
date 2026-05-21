@@ -13,6 +13,10 @@ function asStringArray(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }
 
+function isInsightObject(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function asEvidenceArray(value: unknown): InsightEvidence[] {
   if (!Array.isArray(value)) {
     return [];
@@ -44,7 +48,16 @@ function asViewpoints(value: unknown): InsightViewpoint[] {
 
 export function parseInsightResult(rawText: string): ParsedInsightResult {
   try {
-    const parsed = JSON.parse(rawText) as Record<string, unknown>;
+    const parsed: unknown = JSON.parse(rawText);
+
+    if (!isInsightObject(parsed) || typeof parsed.summary !== "string") {
+      return {
+        kind: "fallback",
+        text: rawText.trim(),
+        reason: "Model output JSON did not match the expected insight schema."
+      };
+    }
+
     const data: StructuredInsight = {
       summary: asString(parsed.summary),
       takeaways: asStringArray(parsed.takeaways),

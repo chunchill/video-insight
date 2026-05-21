@@ -37,7 +37,46 @@ Video Insight 是一个个人使用的浏览器插件，用来快速理解 YouTu
 
 ## 从 0 到 1 安装插件
 
-### 1. 准备环境
+推荐普通用户使用 GitHub Release 里的打包版本；开发者再使用源码构建方式。
+
+### 方式 A：从 GitHub Release 下载并安装
+
+1. 打开项目 Release 页面：
+
+```text
+https://github.com/chunchill/video-insight/releases
+```
+
+2. 下载最新版本里的插件压缩包，例如：
+
+```text
+video-insight-extension-v0.1.0.zip
+```
+
+3. 解压这个 zip 文件。
+
+解压后会得到一个 `dist/` 目录。后续浏览器加载插件时，请选择这个解压出来的 `dist/` 目录。
+
+4. 在 Chrome 地址栏输入：
+
+```text
+chrome://extensions/
+```
+
+5. 打开右上角的 `Developer mode`。
+6. 点击 `Load unpacked`。
+7. 选择刚刚解压出来的 `dist/` 目录。
+8. 加载成功后，扩展列表里会出现 `Video Insight`。
+
+Edge 用户同理，只是扩展管理页面地址是：
+
+```text
+edge://extensions/
+```
+
+### 方式 B：从源码构建并安装
+
+#### 1. 准备环境
 
 需要先安装 Node.js 和 npm。
 
@@ -50,7 +89,7 @@ node -v
 npm -v
 ```
 
-### 2. 安装项目依赖
+#### 2. 安装项目依赖
 
 进入项目目录：
 
@@ -64,7 +103,7 @@ cd /Users/jasper.qiu/Projects/ai-labs/video-insight
 npm install
 ```
 
-### 3. 构建浏览器插件
+#### 3. 构建浏览器插件
 
 运行：
 
@@ -74,7 +113,7 @@ npm run build
 
 构建成功后，会生成 `dist/` 目录。这个目录就是要加载到浏览器里的插件目录。
 
-### 4. 在 Chrome 中加载插件
+#### 4. 在 Chrome 中加载插件
 
 1. 打开 Chrome。
 2. 地址栏输入：
@@ -93,7 +132,7 @@ chrome://extensions/
 
 6. 加载成功后，扩展列表里会出现 `Video Insight`。
 
-### 5. 在 Edge 中加载插件
+#### 5. 在 Edge 中加载插件
 
 1. 打开 Edge。
 2. 地址栏输入：
@@ -130,8 +169,8 @@ edge://extensions/
 ## 使用插件
 
 1. 打开一个 YouTube 视频页面。
-2. 确认该视频有可用字幕/转录文本。
-3. 点击浏览器工具栏里的 `Video Insight` 扩展图标，打开侧边栏。
+2. 确认该视频有可用字幕/转录文本。更稳妥的做法是先在 YouTube 视频下方找到并点击 `转写文稿`，让 YouTube 把视频内容转成文字并显示在页面上；如果页面没有直接显示这个入口，可以先点击视频简介区域的 `更多`，再查找 `转写文稿`。
+3. 转写文稿显示出来后，再点击浏览器 Extension 工具栏里的 `Video Insight` 扩展图标，打开侧边栏。
 4. 选择输出语言：
    - `Chinese (Simplified)`
    - `English`
@@ -216,4 +255,3 @@ dist/                         构建后的插件目录
 npm test
 npm run build
 ```
-

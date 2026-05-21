@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Video Insight",
+  "version": "0.1.0",
+  "description": "Generate structured insights from YouTube video transcripts.",
+  "permissions": ["activeTab", "scripting", "storage", "sidePanel", "tabs"],
+  "host_permissions": ["https://www.youtube.com/*", "https://*.youtube.com/*", "<all_urls>"],
+  "background": {
+    "service_worker": "assets/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/watch*", "https://youtube.com/watch*"],
+      "js": ["assets/contentScript.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "src/sidepanel/sidepanel.html"
+  },
+  "options_page": "src/options/options.html",
+  "action": {
+    "default_title": "Video Insight"
+  }
+}

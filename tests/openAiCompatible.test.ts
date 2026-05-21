@@ -123,6 +123,30 @@ describe("generateInsightWithProvider", () => {
     expect((error as Error).message).not.toContain("sk-secret-value");
   });
 
+  it("redacts the configured provider key from provider errors regardless of prefix", async () => {
+    const providerWithNonOpenAiKey: ModelProviderConfig = {
+      ...provider,
+      apiKey: "hf_secret_token_123"
+    };
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("request included hf_secret_token_123 in a diagnostic", { status: 401 })
+    );
+
+    let error: unknown;
+    try {
+      await generateInsightWithProvider(input, providerWithNonOpenAiKey);
+    } catch (caught) {
+      error = caught;
+    }
+
+    expect(error).toBeInstanceOf(Error);
+    expect((error as Error).message).toBe(
+      "SiliconFlow request failed with HTTP 401: request included [REDACTED] in a diagnostic"
+    );
+    expect((error as Error).message).not.toContain("hf_secret_token_123");
+  });
+
   it("truncates long provider error bodies", async () => {
     const longBody = "a".repeat(300);
 
@@ -173,6 +197,32 @@ describe("generateInsightWithProvider", () => {
 
     await expect(generateInsightWithProvider(input, provider)).rejects.toThrow(
       "SiliconFlow returned an empty model response."
+    );
+  });
+
+  it("treats object model content as malformed transport JSON", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: { summary: "object" } } }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+
+    await expect(generateInsightWithProvider(input, provider)).rejects.toThrow(
+      "SiliconFlow returned malformed JSON."
+    );
+  });
+
+  it("treats array model content as malformed transport JSON", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ choices: [{ message: { content: [] } }] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" }
+      })
+    );
+
+    await expect(generateInsightWithProvider(input, provider)).rejects.toThrow(
+      "SiliconFlow returned malformed JSON."
     );
   });
 });

@@ -30,7 +30,21 @@ function truncateErrorBody(errorText: string): string {
   return `${errorText.slice(0, ERROR_BODY_MAX_LENGTH)}...`;
 }
 
-async function readSanitizedErrorBody(response: Response): Promise<SanitizedErrorBody> {
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function redactErrorBody(errorText: string, apiKey: string): string {
+  const redactedGenericKeys = errorText.replace(API_KEY_PATTERN, "[REDACTED]");
+
+  if (apiKey.length === 0) {
+    return redactedGenericKeys;
+  }
+
+  return redactedGenericKeys.replace(new RegExp(escapeRegExp(apiKey), "g"), "[REDACTED]");
+}
+
+async function readSanitizedErrorBody(response: Response, apiKey: string): Promise<SanitizedErrorBody> {
   let errorText: string;
 
   try {
@@ -39,7 +53,7 @@ async function readSanitizedErrorBody(response: Response): Promise<SanitizedErro
     errorText = "Unable to read provider error body.";
   }
 
-  const redacted = errorText.replace(API_KEY_PATTERN, "[REDACTED]");
+  const redacted = redactErrorBody(errorText, apiKey);
 
   return {
     fullText: redacted,
@@ -101,8 +115,12 @@ async function parseSuccessfulResponse(
 
   const content = data.choices?.[0]?.message?.content;
 
-  if (!content) {
+  if (content == null || content === "") {
     throw new Error(`${config.name} returned an empty model response.`);
+  }
+
+  if (typeof content !== "string") {
+    throw new Error(`${config.name} returned malformed JSON.`);
   }
 
   return parseInsightResult(content);
@@ -115,7 +133,7 @@ export async function generateInsightWithProvider(
   let response = await requestChatCompletion(input, config, true);
 
   if (!response.ok) {
-    let errorBody = await readSanitizedErrorBody(response);
+    let errorBody = await readSanitizedErrorBody(response, config.apiKey);
 
     if (shouldRetryWithoutResponseFormat(errorBody.fullText)) {
       response = await requestChatCompletion(input, config, false);
@@ -124,7 +142,7 @@ export async function generateInsightWithProvider(
         return parseSuccessfulResponse(response, config);
       }
 
-      errorBody = await readSanitizedErrorBody(response);
+      errorBody = await readSanitizedErrorBody(response, config.apiKey);
     }
 
     throw new Error(`${config.name} request failed with HTTP ${response.status}: ${errorBody.displayText}`);

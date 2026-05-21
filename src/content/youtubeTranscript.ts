@@ -5,7 +5,10 @@ export type TranscriptExtractionResult =
   | { ok: false; reason: string };
 
 export function isYouTubeWatchPage(url: URL): boolean {
-  return url.hostname.includes("youtube.com") && url.pathname === "/watch" && url.searchParams.has("v");
+  const hostname = url.hostname.toLowerCase();
+  const isYouTubeHost = hostname === "youtube.com" || hostname.endsWith(".youtube.com");
+
+  return url.protocol === "https:" && isYouTubeHost && url.pathname === "/watch" && url.searchParams.has("v");
 }
 
 function textContent(doc: Document, selector: string): string | undefined {
@@ -27,10 +30,10 @@ function extractVideoMeta(doc: Document, url: URL): VideoMeta {
 
 function extractVisibleTranscriptSegments(doc: Document): TranscriptSegment[] {
   return Array.from(doc.querySelectorAll("ytd-transcript-segment-renderer"))
-    .map((segment) => {
+    .map<TranscriptSegment | undefined>((segment) => {
       const start = segment.querySelector(".segment-timestamp")?.textContent?.trim();
       const text = segment.querySelector(".segment-text")?.textContent?.trim();
-      return text ? { start, text } : undefined;
+      return text ? (start ? { start, text } : { text }) : undefined;
     })
     .filter((segment): segment is TranscriptSegment => Boolean(segment));
 }

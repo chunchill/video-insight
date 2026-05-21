@@ -11,6 +11,10 @@ describe("youtubeTranscript", () => {
 
   it("detects YouTube watch pages", () => {
     expect(isYouTubeWatchPage(new URL("https://www.youtube.com/watch?v=abc123"))).toBe(true);
+    expect(isYouTubeWatchPage(new URL("https://youtube.com/watch?v=abc123"))).toBe(true);
+    expect(isYouTubeWatchPage(new URL("http://www.youtube.com/watch?v=abc123"))).toBe(false);
+    expect(isYouTubeWatchPage(new URL("https://youtube.com.evil.test/watch?v=abc123"))).toBe(false);
+    expect(isYouTubeWatchPage(new URL("https://notyoutube.com/watch?v=abc123"))).toBe(false);
     expect(isYouTubeWatchPage(new URL("https://www.youtube.com/"))).toBe(false);
   });
 

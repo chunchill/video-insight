@@ -37,3 +37,109 @@ textarea {
   color: #5d6678;
   line-height: 1.45;
 }
+
+.panel-section {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.form-control {
+  display: grid;
+  gap: 6px;
+  color: #313b4f;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.form-control select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #cbd3e1;
+  border-radius: 6px;
+  background: #fff;
+  color: #172033;
+  padding: 8px 10px;
+}
+
+.primary-button,
+.notice button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.primary-button {
+  width: 100%;
+  background: #2457d6;
+  color: #fff;
+}
+
+.primary-button:disabled {
+  background: #98a5bd;
+  cursor: not-allowed;
+}
+
+.notice,
+.error-box,
+.insight-card {
+  border: 1px solid #dbe1ec;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px;
+}
+
+.notice h2,
+.insight-card h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+}
+
+.notice p,
+.insight-card p {
+  margin: 0 0 12px;
+  color: #4d586c;
+  line-height: 1.5;
+}
+
+.notice button {
+  background: #172033;
+  color: #fff;
+}
+
+.error-box {
+  margin-top: 14px;
+  border-color: #f0b8b8;
+  background: #fff4f4;
+  color: #9f1d1d;
+  line-height: 1.45;
+}
+
+.insight-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding-left: 20px;
+  color: #2f3a4d;
+  line-height: 1.5;
+}
+
+.insight-card summary {
+  color: #172033;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.insight-card pre {
+  overflow-x: auto;
+  margin: 0;
+  border-radius: 6px;
+  background: #f2f4f8;
+  padding: 10px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}

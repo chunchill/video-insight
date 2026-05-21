@@ -64,4 +64,53 @@ describe("OptionsApp", () => {
     expect(screen.getByLabelText("Model")).toHaveValue("example-model");
     expect(screen.getByLabelText("Default output language")).toHaveValue("en");
   });
+
+  it("preserves existing providers and enabled states when editing a loaded provider", async () => {
+    await saveProviderSettings({
+      providers: [
+        {
+          id: "provider-1",
+          name: "Selected disabled",
+          baseUrl: "https://api.selected.example/v1",
+          apiKey: "sk-selected",
+          model: "selected-model",
+          enabled: false
+        },
+        {
+          id: "provider-2",
+          name: "Other disabled",
+          baseUrl: "https://api.other.example/v1",
+          apiKey: "sk-other",
+          model: "other-model",
+          enabled: false
+        }
+      ],
+      selectedProviderId: "provider-1",
+      defaultLanguage: "zh-CN"
+    });
+
+    render(<OptionsApp />);
+
+    const nameInput = await screen.findByLabelText("Provider name");
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, "Edited selected");
+    await userEvent.click(screen.getByRole("button", { name: "Save provider" }));
+
+    expect(await screen.findByText("Settings saved.")).toBeInTheDocument();
+    const settings = await getProviderSettings();
+    expect(settings.providers).toHaveLength(2);
+    expect(settings.selectedProviderId).toBe("provider-1");
+    expect(settings.providers).toEqual([
+      expect.objectContaining({
+        id: "provider-1",
+        name: "Edited selected",
+        enabled: false
+      }),
+      expect.objectContaining({
+        id: "provider-2",
+        name: "Other disabled",
+        enabled: false
+      })
+    ]);
+  });
 });

@@ -63,7 +63,15 @@ export function OptionsApp() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    const provider = createProviderConfig(providerForm);
+    const settings = await getProviderSettings();
+    const existingProvider = providerForm.id
+      ? settings.providers.find((provider) => provider.id === providerForm.id)
+      : undefined;
+    const provider = createProviderConfig({
+      ...providerForm,
+      id: existingProvider?.id ?? providerForm.id,
+      enabled: existingProvider?.enabled
+    });
     const validationErrors = validateProviderConfig(provider);
     setErrors(validationErrors);
     setSuccessMessage("");
@@ -72,8 +80,12 @@ export function OptionsApp() {
       return;
     }
 
+    const providers = existingProvider
+      ? settings.providers.map((currentProvider) => (currentProvider.id === provider.id ? provider : currentProvider))
+      : [...settings.providers, provider];
+
     await saveProviderSettings({
-      providers: [provider],
+      providers,
       selectedProviderId: provider.id,
       defaultLanguage
     });

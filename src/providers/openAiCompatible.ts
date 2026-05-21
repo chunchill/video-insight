@@ -13,11 +13,24 @@ interface ChatCompletionResponse {
 const ERROR_BODY_MAX_LENGTH = 240;
 const API_KEY_PATTERN = /\bsk-[A-Za-z0-9._-]+\b/g;
 
+interface SanitizedErrorBody {
+  fullText: string;
+  displayText: string;
+}
+
 function endpointFor(baseUrl: string): string {
   return `${baseUrl.replace(/\/$/, "")}/chat/completions`;
 }
 
-async function readSanitizedErrorBody(response: Response): Promise<string> {
+function truncateErrorBody(errorText: string): string {
+  if (errorText.length <= ERROR_BODY_MAX_LENGTH) {
+    return errorText;
+  }
+
+  return `${errorText.slice(0, ERROR_BODY_MAX_LENGTH)}...`;
+}
+
+async function readSanitizedErrorBody(response: Response): Promise<SanitizedErrorBody> {
   let errorText: string;
 
   try {
@@ -28,11 +41,10 @@ async function readSanitizedErrorBody(response: Response): Promise<string> {
 
   const redacted = errorText.replace(API_KEY_PATTERN, "[REDACTED]");
 
-  if (redacted.length <= ERROR_BODY_MAX_LENGTH) {
-    return redacted;
-  }
-
-  return `${redacted.slice(0, ERROR_BODY_MAX_LENGTH)}...`;
+  return {
+    fullText: redacted,
+    displayText: truncateErrorBody(redacted)
+  };
 }
 
 function shouldRetryWithoutResponseFormat(errorText: string): boolean {
@@ -71,13 +83,22 @@ async function requestChatCompletion(
   });
 }
 
+function isTransportObject(value: unknown): value is ChatCompletionResponse {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 async function parseSuccessfulResponse(
   response: Response,
   config: ModelProviderConfig
 ): Promise<ParsedInsightResult> {
   const data = (await response.json().catch(() => {
     throw new Error(`${config.name} returned malformed JSON.`);
-  })) as ChatCompletionResponse;
+  })) as unknown;
+
+  if (!isTransportObject(data)) {
+    throw new Error(`${config.name} returned malformed JSON.`);
+  }
+
   const content = data.choices?.[0]?.message?.content;
 
   if (!content) {
@@ -94,19 +115,19 @@ export async function generateInsightWithProvider(
   let response = await requestChatCompletion(input, config, true);
 
   if (!response.ok) {
-    let errorText = await readSanitizedErrorBody(response);
+    let errorBody = await readSanitizedErrorBody(response);
 
-    if (shouldRetryWithoutResponseFormat(errorText)) {
+    if (shouldRetryWithoutResponseFormat(errorBody.fullText)) {
       response = await requestChatCompletion(input, config, false);
 
       if (response.ok) {
         return parseSuccessfulResponse(response, config);
       }
 
-      errorText = await readSanitizedErrorBody(response);
+      errorBody = await readSanitizedErrorBody(response);
     }
 
-    throw new Error(`${config.name} request failed with HTTP ${response.status}: ${errorText}`);
+    throw new Error(`${config.name} request failed with HTTP ${response.status}: ${errorBody.displayText}`);
   }
 
   return parseSuccessfulResponse(response, config);

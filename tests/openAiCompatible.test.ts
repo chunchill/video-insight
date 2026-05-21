@@ -74,6 +74,28 @@ describe("generateInsightWithProvider", () => {
     expect(result.kind).toBe("structured");
   });
 
+  it("retries when response_format appears after the truncated error preview", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(new Response(`${"a".repeat(260)} response_format is unsupported`, { status: 400 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ summary: "长错误后重试", takeaways: [] }) } }]
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      );
+
+    const result = await generateInsightWithProvider(input, provider);
+
+    const secondBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(secondBody).not.toHaveProperty("response_format");
+    expect(result.kind).toBe("structured");
+  });
+
   it("throws readable provider errors", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("invalid key", { status: 401 }));
 
@@ -114,6 +136,26 @@ describe("generateInsightWithProvider", () => {
   it("wraps malformed successful JSON responses with provider context", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response("{not-json", { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+
+    await expect(generateInsightWithProvider(input, provider)).rejects.toThrow(
+      "SiliconFlow returned malformed JSON."
+    );
+  });
+
+  it("treats null successful transport JSON as malformed", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("null", { status: 200, headers: { "Content-Type": "application/json" } })
+    );
+
+    await expect(generateInsightWithProvider(input, provider)).rejects.toThrow(
+      "SiliconFlow returned malformed JSON."
+    );
+  });
+
+  it("treats array successful transport JSON as malformed", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("[]", { status: 200, headers: { "Content-Type": "application/json" } })
     );
 
     await expect(generateInsightWithProvider(input, provider)).rejects.toThrow(

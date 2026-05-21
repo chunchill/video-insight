@@ -10,9 +10,20 @@ const languageNames = {
   en: "English"
 } as const;
 
+function buildTranscriptText(transcript: InsightInput["transcript"]): string {
+  if (transcript.segments.length === 0) {
+    return transcript.plainText;
+  }
+
+  return transcript.segments
+    .map((segment) => (segment.start ? `[${segment.start}] ${segment.text}` : segment.text))
+    .join("\n");
+}
+
 export function buildInsightMessages(input: InsightInput): ChatMessage[] {
   const { transcript, outputLanguage } = input;
   const languageName = languageNames[outputLanguage];
+  const transcriptText = buildTranscriptText(transcript);
 
   return [
     {
@@ -35,7 +46,7 @@ export function buildInsightMessages(input: InsightInput): ChatMessage[] {
         `Transcript language: ${transcript.language ?? "Unknown"}`,
         "",
         "Transcript:",
-        transcript.plainText
+        transcriptText
       ].join("\n")
     }
   ];

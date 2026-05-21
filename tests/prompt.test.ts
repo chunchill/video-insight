@@ -26,4 +26,16 @@ describe("buildInsightMessages", () => {
     const messages = buildInsightMessages({ transcript, outputLanguage: "en" });
     expect(messages[0].content).toContain("English");
   });
+
+  it("includes segment timestamps when segments are provided", () => {
+    const messages = buildInsightMessages({
+      transcript: {
+        ...transcript,
+        segments: [{ start: "03:12", text: "Workflow example" }]
+      },
+      outputLanguage: "en"
+    });
+
+    expect(messages[1].content).toContain("[03:12] Workflow example");
+  });
 });

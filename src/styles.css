@@ -93,6 +93,16 @@ textarea {
   padding: 8px 10px;
 }
 
+.transcript-tip {
+  border: 1px solid #d9e4f5;
+  border-radius: 6px;
+  background: #f7fbff;
+  color: #315176;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
 .primary-button,
 .notice button {
   min-height: 38px;

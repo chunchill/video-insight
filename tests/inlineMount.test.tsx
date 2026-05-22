@@ -52,7 +52,7 @@ describe("inlineMount", () => {
     expect(style?.textContent).toContain("#video-insight-inline-root .inline-panel-body");
     expect(style?.textContent).toContain("overflow-y: auto");
     expect(style?.textContent).toContain('[data-inline-font-size="xl"]');
-    expect(style?.textContent).toContain("padding-right: 124px");
+    expect(style?.textContent).toContain(".inline-settings-menu");
     expect(style?.textContent).toContain("position: absolute");
     expect(style?.textContent).toContain("right: 0");
     expect(style?.textContent).not.toMatch(/(^|\s)(:root|body|\*)\s*\{/);

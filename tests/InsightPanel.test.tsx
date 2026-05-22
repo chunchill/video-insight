@@ -158,37 +158,50 @@ describe("InsightPanel", () => {
     await saveProvider();
     const { container } = render(<InsightPanel context={context({ source: "inline" })} />);
 
-    expect(await screen.findByRole("button", { name: "Collapse panel" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Smaller text" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Larger text" })).toBeInTheDocument();
+    await userEvent.click(await screen.findByRole("button", { name: "Panel settings" }));
+    expect(screen.getByRole("menu", { name: "Panel settings" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collapse panel" })).toBeInTheDocument();
     expect(container.querySelector(".inline-panel-body")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Generate insight" })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Collapse panel" }));
 
-    expect(screen.getByRole("button", { name: "Expand panel" })).toBeInTheDocument();
+    expect(screen.queryByRole("menu", { name: "Panel settings" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Generate insight" })).not.toBeInTheDocument();
     expect(container.querySelector(".inline-panel-body")).toBeNull();
 
+    await userEvent.click(screen.getByRole("button", { name: "Panel settings" }));
     await userEvent.click(screen.getByRole("button", { name: "Expand panel" }));
 
     expect(screen.getByRole("button", { name: "Generate insight" })).toBeInTheDocument();
   });
 
-  it("uses compact tooltip controls in the inline panel header", async () => {
+  it("uses one settings dropdown for inline panel controls", async () => {
     await saveProvider();
     render(<InsightPanel context={context({ source: "inline" })} />);
 
-    const collapseButton = await screen.findByRole("button", { name: "Collapse panel" });
+    const settingsButton = await screen.findByRole("button", { name: "Panel settings" });
+
+    expect(settingsButton).toHaveAttribute("title", "Panel settings");
+    expect(settingsButton).toHaveAttribute("aria-expanded", "false");
+    expect(settingsButton).toHaveTextContent("⚙");
+    expect(screen.queryByRole("button", { name: "Smaller text" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Collapse panel" })).not.toBeInTheDocument();
+
+    await userEvent.click(settingsButton);
+
+    expect(settingsButton).toHaveAttribute("aria-expanded", "true");
+    expect(screen.getByRole("menu", { name: "Panel settings" })).toBeInTheDocument();
     const smallerButton = screen.getByRole("button", { name: "Smaller text" });
     const largerButton = screen.getByRole("button", { name: "Larger text" });
-
-    expect(collapseButton).toHaveAttribute("title", "Collapse panel");
-    expect(collapseButton).toHaveTextContent("^");
-    expect(collapseButton).not.toHaveTextContent("Collapse panel");
     expect(smallerButton).toHaveAttribute("title", "Smaller text");
     expect(largerButton).toHaveAttribute("title", "Larger text");
-    expect(screen.queryByText("Large")).not.toBeInTheDocument();
+    expect(screen.getByText("Large")).toBeInTheDocument();
+
+    await userEvent.click(document.body);
+
+    expect(screen.queryByRole("menu", { name: "Panel settings" })).not.toBeInTheDocument();
+    expect(settingsButton).toHaveAttribute("aria-expanded", "false");
   });
 
   it("persists inline panel font size preferences", async () => {
@@ -205,6 +218,7 @@ describe("InsightPanel", () => {
 
     expect(shell.dataset.inlineFontSize).toBe("large");
 
+    await userEvent.click(screen.getByRole("button", { name: "Panel settings" }));
     await userEvent.click(screen.getByRole("button", { name: "Larger text" }));
 
     expect(shell.dataset.inlineFontSize).toBe("xl");
@@ -218,7 +232,7 @@ describe("InsightPanel", () => {
     const { container } = render(<InsightPanel context={context({ source: "sidepanel" })} />);
 
     expect(await screen.findByRole("button", { name: "Generate insight" })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Collapse panel" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Panel settings" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Smaller text" })).not.toBeInTheDocument();
     expect(container.querySelector(".inline-panel-body")).toBeNull();
   });

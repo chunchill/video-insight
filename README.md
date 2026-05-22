@@ -56,7 +56,7 @@ https://github.com/chunchill/video-insight/releases
 2. 下载最新版本里的插件压缩包，例如：
 
 ```text
-video-insight-extension-v0.3.1.zip
+video-insight-extension-v0.3.2.zip
 ```
 
 3. 解压这个 zip 文件。

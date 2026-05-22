@@ -80,12 +80,14 @@ export function FallbackResult({ result }: { result: Extract<ParsedInsightResult
 export function InsightPanel({ context }: { context: InsightPanelContext }) {
   const isMountedRef = useRef(false);
   const requestIdRef = useRef(0);
+  const settingsMenuRef = useRef<HTMLDivElement | null>(null);
   const isInline = context.source === "inline";
   const [activeProvider, setActiveProvider] = useState<ModelProviderConfig | undefined>();
   const [language, setLanguage] = useState<OutputLanguage>("zh-CN");
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [fontSize, setFontSize] = useState<InlinePanelFontSize>("large");
   const [error, setError] = useState<string | undefined>();
   const [result, setResult] = useState<ParsedInsightResult | undefined>();
@@ -128,9 +130,31 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   }, [isInline]);
 
   useEffect(() => {
+    if (!isSettingsOpen) {
+      return;
+    }
+
+    function handlePointerDown(event: PointerEvent) {
+      const target = event.target;
+
+      if (target instanceof Node && settingsMenuRef.current?.contains(target)) {
+        return;
+      }
+
+      setIsSettingsOpen(false);
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isSettingsOpen]);
+
+  useEffect(() => {
     requestIdRef.current += 1;
     setIsGenerating(false);
     setIsCollapsed(false);
+    setIsSettingsOpen(false);
     setError(undefined);
     setResult(undefined);
   }, [context.videoId]);
@@ -190,6 +214,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   }
 
   const transcriptStatus = context.getTranscriptStatus?.();
+  const fontSizeLabel = fontSize === "xl" ? "XL" : fontSize[0].toUpperCase() + fontSize.slice(1);
   const panelContent = (
     <>
       <section className="panel-section" aria-label="Generation settings">
@@ -236,36 +261,59 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
           <p>Open a YouTube video and generate transcript-based insights.</p>
         </div>
         {isInline ? (
-          <div className="inline-panel-controls" aria-label="Inline panel reading controls">
-            <div className="font-size-controls" aria-label="Panel text size">
-              <button
-                type="button"
-                aria-label="Smaller text"
-                title="Smaller text"
-                disabled={fontSize === "small"}
-                onClick={() => handleChangeFontSize("smaller")}
-              >
-                A-
-              </button>
-              <button
-                type="button"
-                aria-label="Larger text"
-                title="Larger text"
-                disabled={fontSize === "xl"}
-                onClick={() => handleChangeFontSize("larger")}
-              >
-                A+
-              </button>
-            </div>
+          <div className="inline-panel-controls" ref={settingsMenuRef}>
             <button
-              className="collapse-button"
+              className="inline-settings-button"
               type="button"
-              aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
-              title={isCollapsed ? "Expand panel" : "Collapse panel"}
-              onClick={() => setIsCollapsed((value) => !value)}
+              aria-label="Panel settings"
+              aria-haspopup="menu"
+              aria-expanded={isSettingsOpen}
+              title="Panel settings"
+              onClick={() => setIsSettingsOpen((value) => !value)}
             >
-              {isCollapsed ? "v" : "^"}
+              ⚙
             </button>
+            {isSettingsOpen ? (
+              <div className="inline-settings-menu" role="menu" aria-label="Panel settings">
+                <div className="settings-menu-section">
+                  <span className="settings-menu-label">Text size</span>
+                  <div className="font-size-controls" aria-label="Panel text size">
+                    <button
+                      type="button"
+                      aria-label="Smaller text"
+                      title="Smaller text"
+                      disabled={fontSize === "small"}
+                      onClick={() => handleChangeFontSize("smaller")}
+                    >
+                      A-
+                    </button>
+                    <span className="font-size-value" aria-live="polite">
+                      {fontSizeLabel}
+                    </span>
+                    <button
+                      type="button"
+                      aria-label="Larger text"
+                      title="Larger text"
+                      disabled={fontSize === "xl"}
+                      onClick={() => handleChangeFontSize("larger")}
+                    >
+                      A+
+                    </button>
+                  </div>
+                </div>
+                <button
+                  className="settings-menu-action"
+                  type="button"
+                  aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
+                  onClick={() => {
+                    setIsCollapsed((value) => !value);
+                    setIsSettingsOpen(false);
+                  }}
+                >
+                  {isCollapsed ? "Expand panel" : "Collapse panel"}
+                </button>
+              </div>
+            ) : null}
           </div>
         ) : null}
       </header>

@@ -80,7 +80,7 @@ export const INLINE_PANEL_CSS = `
 #video-insight-inline-root .app-header {
   position: relative;
   min-height: 38px;
-  padding-right: 124px;
+  padding-right: 42px;
 }
 
 #video-insight-inline-root .app-header h1 {
@@ -98,24 +98,61 @@ export const INLINE_PANEL_CSS = `
   position: absolute;
   top: 0;
   right: 0;
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
+  z-index: 2;
+}
+
+#video-insight-inline-root .inline-settings-button {
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  border: 1px solid #d4dbea;
+  border-radius: 999px;
+  background: #fff;
+  color: #172033;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+#video-insight-inline-root .inline-settings-button:hover,
+#video-insight-inline-root .inline-settings-button[aria-expanded="true"] {
+  border-color: #b6c2d6;
+  background: #eef3ff;
+}
+
+#video-insight-inline-root .inline-settings-menu {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  width: 208px;
+  border: 1px solid #d7deeb;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 12px 28px rgba(23, 32, 51, 0.16);
+  padding: 10px;
+}
+
+#video-insight-inline-root .settings-menu-section {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #edf1f7;
+}
+
+#video-insight-inline-root .settings-menu-label {
+  color: #5d6678;
+  font-size: 12px;
+  font-weight: 700;
 }
 
 #video-insight-inline-root .font-size-controls {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  border: 1px solid #d4dbea;
-  border-radius: 6px;
-  background: #fff;
-  padding: 3px;
+  gap: 8px;
 }
 
-#video-insight-inline-root .font-size-controls button,
-#video-insight-inline-root .collapse-button {
+#video-insight-inline-root .font-size-controls button {
   width: 30px;
   min-width: 30px;
   height: 30px;
@@ -127,10 +164,15 @@ export const INLINE_PANEL_CSS = `
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
+  padding: 0;
 }
 
-#video-insight-inline-root .font-size-controls button {
-  padding: 0;
+#video-insight-inline-root .font-size-value {
+  flex: 1;
+  color: #313b4f;
+  font-size: 13px;
+  font-weight: 700;
+  text-align: center;
 }
 
 #video-insight-inline-root .font-size-controls button:disabled {
@@ -138,9 +180,17 @@ export const INLINE_PANEL_CSS = `
   cursor: not-allowed;
 }
 
-#video-insight-inline-root .collapse-button {
-  padding: 0;
-  white-space: nowrap;
+#video-insight-inline-root .settings-menu-action {
+  width: 100%;
+  min-height: 34px;
+  margin-top: 10px;
+  border: 1px solid #cbd3e1;
+  border-radius: 6px;
+  background: #f8fafc;
+  color: #172033;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 700;
 }
 
 #video-insight-inline-root .panel-section {
@@ -261,11 +311,11 @@ export const INLINE_PANEL_CSS = `
 
 @media (max-width: 720px) {
   #video-insight-inline-root .app-header {
-    padding-right: 112px;
+    padding-right: 40px;
   }
 
-  #video-insight-inline-root .inline-panel-controls {
-    gap: 4px;
+  #video-insight-inline-root .inline-settings-menu {
+    width: 196px;
   }
 }
 `;

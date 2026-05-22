@@ -7,4 +7,5 @@ export interface InsightPanelContext {
   videoId?: string;
   getTranscript: () => Promise<TranscriptPayload>;
   getTranscriptStatus?: () => string;
+  openSettings?: () => void;
 }

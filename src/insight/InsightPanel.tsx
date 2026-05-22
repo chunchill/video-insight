@@ -165,7 +165,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
           <div className="notice">
             <h2>No provider configured</h2>
             <p>Add an OpenAI-compatible provider before generating insights.</p>
-            <button type="button" onClick={() => chrome.runtime.openOptionsPage()}>
+            <button type="button" onClick={() => context.openSettings?.()}>
               Open settings
             </button>
           </div>

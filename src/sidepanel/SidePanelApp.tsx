@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { InsightPanel } from "../insight/InsightPanel";
 import type { InsightPanelContext } from "../insight/insightPanelTypes";
 import type { TranscriptPayload } from "../shared/types";
@@ -51,23 +51,35 @@ async function getActiveTranscript(): Promise<TranscriptPayload> {
 
 export function SidePanelApp() {
   const [activeTab, setActiveTab] = useState<ActiveTabState>({});
+  const isPollingActiveTabRef = useRef(false);
 
   useEffect(() => {
     let isMounted = true;
 
     async function refreshActiveTab() {
-      const nextActiveTab = await queryActiveTab();
-      if (!isMounted) {
+      if (isPollingActiveTabRef.current) {
         return;
       }
 
-      setActiveTab((currentActiveTab) => {
-        if (currentActiveTab.id === nextActiveTab.id && currentActiveTab.url === nextActiveTab.url) {
-          return currentActiveTab;
+      isPollingActiveTabRef.current = true;
+      try {
+        const nextActiveTab = await queryActiveTab();
+        if (!isMounted) {
+          return;
         }
 
-        return nextActiveTab;
-      });
+        setActiveTab((currentActiveTab) => {
+          if (currentActiveTab.id === nextActiveTab.id && currentActiveTab.url === nextActiveTab.url) {
+            return currentActiveTab;
+          }
+
+          return nextActiveTab;
+        });
+      } catch {
+        // Ignore transient Chrome tab query failures; the next poll can recover state.
+      } finally {
+        isPollingActiveTabRef.current = false;
+      }
     }
 
     void refreshActiveTab();
@@ -82,14 +94,16 @@ export function SidePanelApp() {
   }, []);
 
   const getTranscript = useCallback(() => getActiveTranscript(), []);
+  const openSettings = useCallback(() => chrome.runtime.openOptionsPage(), []);
   const videoId = useMemo(() => (activeTab.url ? getYouTubeVideoId(activeTab.url) : undefined), [activeTab.url]);
   const context = useMemo<InsightPanelContext>(
     () => ({
       source: "sidepanel",
       videoId,
-      getTranscript
+      getTranscript,
+      openSettings
     }),
-    [getTranscript, videoId]
+    [getTranscript, openSettings, videoId]
   );
 
   return <InsightPanel context={context} />;

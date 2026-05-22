@@ -124,6 +124,16 @@ describe("InsightPanel", () => {
     );
   });
 
+  it("uses context settings action when no provider exists", async () => {
+    const openSettings = vi.fn();
+
+    render(<InsightPanel context={context({ openSettings })} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Open settings" }));
+
+    expect(openSettings).toHaveBeenCalledTimes(1);
+    expect(chrome.runtime.openOptionsPage).not.toHaveBeenCalled();
+  });
+
   it("ignores stale generation results after video changes", async () => {
     await saveProvider();
     let resolveInsight: (result: ParsedInsightResult) => void = () => {};

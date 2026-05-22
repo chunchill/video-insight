@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { generateInsightWithProvider } from "../src/providers/openAiCompatible";
 import { SidePanelApp } from "../src/sidepanel/SidePanelApp";
@@ -25,7 +25,8 @@ describe("SidePanelApp", () => {
     render(<SidePanelApp />);
 
     expect(await screen.findByText("No provider configured")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Open settings" })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "Open settings" }));
+    expect(chrome.runtime.openOptionsPage).toHaveBeenCalledTimes(1);
   });
 
   it("switches output language", async () => {
@@ -156,8 +157,25 @@ describe("SidePanelApp", () => {
     });
 
     let activeUrl = "https://www.youtube.com/watch?v=abc123";
+    let pollActiveTab: (() => void) | undefined;
+    const intervalId = 1 as unknown as ReturnType<typeof window.setInterval>;
+    const setIntervalSpy = vi.spyOn(window, "setInterval").mockImplementation(
+      ((handler: TimerHandler, timeout?: number) => {
+        if (timeout === 1000 && typeof handler === "function") {
+          pollActiveTab = handler as () => void;
+        }
+        return intervalId;
+      }) as unknown as typeof window.setInterval
+    );
+    const clearIntervalSpy = vi.spyOn(window, "clearInterval").mockImplementation(() => undefined);
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce([{ id: 10, url: activeUrl }])
+      .mockResolvedValueOnce([{ id: 10, url: activeUrl }])
+      .mockRejectedValueOnce(new Error("Transient query failure"))
+      .mockImplementation(async () => [{ id: 10, url: activeUrl }]);
     chrome.tabs = {
-      query: vi.fn(async () => [{ id: 10, url: activeUrl }]),
+      query,
       sendMessage: vi.fn(async () => ({
         ok: true,
         transcript: {
@@ -187,16 +205,39 @@ describe("SidePanelApp", () => {
     });
 
     render(<SidePanelApp />);
+    await waitFor(() => {
+      expect(query).toHaveBeenCalledTimes(1);
+    });
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    expect(pollActiveTab).toBeDefined();
     await userEvent.click(await screen.findByRole("button", { name: "Generate insight" }));
     expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
 
     activeUrl = "https://www.youtube.com/watch?v=xyz789";
     expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
-    await waitFor(
-      () => {
-        expect(screen.queryByText("AI changes complete workflows.")).not.toBeInTheDocument();
-      },
-      { timeout: 1800 }
-    );
+    await act(async () => {
+      pollActiveTab?.();
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(query).toHaveBeenCalledTimes(3);
+    });
+    expect(screen.queryByText("AI changes complete workflows.")).toBeInTheDocument();
+    await act(async () => {
+      pollActiveTab?.();
+      await Promise.resolve();
+    });
+    await waitFor(() => {
+      expect(query).toHaveBeenCalledTimes(4);
+    });
+    await waitFor(() => {
+      expect(screen.queryByText("AI changes complete workflows.")).not.toBeInTheDocument();
+    });
+    expect(query).toHaveBeenCalledTimes(4);
+    setIntervalSpy.mockRestore();
+    clearIntervalSpy.mockRestore();
   });
 });

@@ -5,8 +5,11 @@ import {
   mountInlinePanel,
   unmountInlinePanel
 } from "../src/content/inlineMount";
+import { installChromeMock } from "../src/test/chromeMock";
 
-beforeEach(() => {
+beforeEach(async () => {
+  installChromeMock();
+  await chrome.storage.local.clear();
   document.body.innerHTML = "";
 });
 
@@ -46,6 +49,9 @@ describe("inlineMount", () => {
     expect(style).toBeTruthy();
     expect(style?.parentElement).toBe(root);
     expect(style?.textContent).toContain("#video-insight-inline-root .app-shell");
+    expect(style?.textContent).toContain("#video-insight-inline-root .inline-panel-body");
+    expect(style?.textContent).toContain("overflow-y: auto");
+    expect(style?.textContent).toContain('[data-inline-font-size="xl"]');
     expect(style?.textContent).not.toMatch(/(^|\s)(:root|body|\*)\s*\{/);
   });
 

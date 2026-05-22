@@ -8,6 +8,8 @@ Video Insight 是一个个人使用的浏览器插件，用来快速理解 YouTu
 
 - 在 YouTube watch 页面右侧推荐栏附近直接显示 Video Insight 面板。
 - 点击页面面板里的 `Generate insight` 生成当前视频洞察。
+- 页面面板支持内部滚动阅读长洞察，不会带着 YouTube 视频页面一起滚动。
+- 页面面板支持收缩 / 展开，以及 `A-` / `A+` 即时调整字体大小；字体大小偏好会保存在浏览器本地。
 - 面板会尽量自动打开 YouTube 的 transcript / 转写文稿 UI，并读取当前视频的可见字幕/转录文本。
 - 切换到另一个视频时，会自动清空旧视频的洞察结果。
 - 浏览器扩展侧边栏仍可作为备用入口。
@@ -54,7 +56,7 @@ https://github.com/chunchill/video-insight/releases
 2. 下载最新版本里的插件压缩包，例如：
 
 ```text
-video-insight-extension-v0.2.1.zip
+video-insight-extension-v0.3.0.zip
 ```
 
 3. 解压这个 zip 文件。
@@ -179,6 +181,12 @@ edge://extensions/
    - `English`
 4. 点击页面面板里的 `Generate insight`。
 5. 等待面板自动打开 YouTube 的转写文稿并返回洞察结果。
+6. 结果较长时，直接在 `Video Insight` 页面面板内部滚动阅读，视频播放器不会被页面滚动带离视线。
+
+页面面板右上角提供两个阅读控制：
+
+- `Collapse panel` / `Expand panel`：收缩或展开整个页面面板。
+- `A-` / `A+`：即时调小或调大面板字体。当前支持 `Small`、`Default`、`Large`、`XL` 四档，默认是 `Large`，并会保存在浏览器本地。
 
 通常不需要先手动打开转写文稿。只有当页面面板提示 YouTube 没有自动加载 transcript 时，再手动打开：
 

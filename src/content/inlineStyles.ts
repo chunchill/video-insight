@@ -29,15 +29,122 @@ export const INLINE_PANEL_CSS = `
   padding: 16px;
 }
 
+#video-insight-inline-root .inline-panel-shell {
+  --inline-panel-font-size: 15px;
+  --inline-panel-title-size: 20px;
+  --inline-panel-card-title-size: 16px;
+}
+
+#video-insight-inline-root .inline-panel-shell[data-inline-font-size="small"] {
+  --inline-panel-font-size: 13px;
+  --inline-panel-title-size: 18px;
+  --inline-panel-card-title-size: 15px;
+}
+
+#video-insight-inline-root .inline-panel-shell[data-inline-font-size="default"] {
+  --inline-panel-font-size: 14px;
+  --inline-panel-title-size: 19px;
+  --inline-panel-card-title-size: 16px;
+}
+
+#video-insight-inline-root .inline-panel-shell[data-inline-font-size="large"] {
+  --inline-panel-font-size: 15px;
+  --inline-panel-title-size: 20px;
+  --inline-panel-card-title-size: 17px;
+}
+
+#video-insight-inline-root .inline-panel-shell[data-inline-font-size="xl"] {
+  --inline-panel-font-size: 16px;
+  --inline-panel-title-size: 21px;
+  --inline-panel-card-title-size: 18px;
+}
+
+#video-insight-inline-root .inline-panel-body {
+  max-height: min(720px, calc(100vh - 164px));
+  overflow-y: auto;
+  padding-right: 4px;
+  scrollbar-gutter: stable;
+  font-size: var(--inline-panel-font-size);
+}
+
+#video-insight-inline-root .inline-panel-body::-webkit-scrollbar {
+  width: 10px;
+}
+
+#video-insight-inline-root .inline-panel-body::-webkit-scrollbar-thumb {
+  border: 3px solid #f6f7fb;
+  border-radius: 999px;
+  background: #b9c3d4;
+}
+
+#video-insight-inline-root .app-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
 #video-insight-inline-root .app-header h1 {
   margin: 0;
-  font-size: 20px;
+  font-size: var(--inline-panel-title-size, 20px);
 }
 
 #video-insight-inline-root .app-header p {
   margin: 6px 0 0;
   color: #5d6678;
   line-height: 1.45;
+}
+
+#video-insight-inline-root .inline-panel-controls {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
+#video-insight-inline-root .font-size-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid #d4dbea;
+  border-radius: 6px;
+  background: #fff;
+  padding: 3px;
+}
+
+#video-insight-inline-root .font-size-controls span {
+  min-width: 48px;
+  color: #3f4a5f;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: center;
+}
+
+#video-insight-inline-root .font-size-controls button,
+#video-insight-inline-root .collapse-button {
+  min-height: 30px;
+  border: 1px solid #cbd3e1;
+  border-radius: 5px;
+  background: #fff;
+  color: #172033;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+#video-insight-inline-root .font-size-controls button {
+  min-width: 34px;
+  padding: 4px 6px;
+}
+
+#video-insight-inline-root .font-size-controls button:disabled {
+  color: #98a5bd;
+  cursor: not-allowed;
+}
+
+#video-insight-inline-root .collapse-button {
+  padding: 4px 10px;
+  white-space: nowrap;
 }
 
 #video-insight-inline-root .panel-section {
@@ -107,7 +214,7 @@ export const INLINE_PANEL_CSS = `
 #video-insight-inline-root .notice h2,
 #video-insight-inline-root .insight-card h2 {
   margin: 0 0 8px;
-  font-size: 16px;
+  font-size: var(--inline-panel-card-title-size, 16px);
 }
 
 #video-insight-inline-root .notice p,
@@ -142,7 +249,7 @@ export const INLINE_PANEL_CSS = `
 #video-insight-inline-root .insight-card summary {
   color: #172033;
   cursor: pointer;
-  font-size: 16px;
+  font-size: var(--inline-panel-card-title-size, 16px);
   font-weight: 700;
 }
 
@@ -154,5 +261,16 @@ export const INLINE_PANEL_CSS = `
   padding: 10px;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+@media (max-width: 720px) {
+  #video-insight-inline-root .app-header {
+    display: grid;
+  }
+
+  #video-insight-inline-root .inline-panel-controls {
+    justify-content: space-between;
+    width: 100%;
+  }
 }
 `;

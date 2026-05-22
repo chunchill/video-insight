@@ -153,4 +153,57 @@ describe("InsightPanel", () => {
       expect(screen.queryByText("AI changes complete workflows.")).not.toBeInTheDocument();
     });
   });
+
+  it("shows inline-only reading controls and collapses the panel body", async () => {
+    await saveProvider();
+    const { container } = render(<InsightPanel context={context({ source: "inline" })} />);
+
+    expect(await screen.findByRole("button", { name: "Collapse panel" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Smaller text" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Larger text" })).toBeInTheDocument();
+    expect(container.querySelector(".inline-panel-body")).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Generate insight" })).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Collapse panel" }));
+
+    expect(screen.getByRole("button", { name: "Expand panel" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Generate insight" })).not.toBeInTheDocument();
+    expect(container.querySelector(".inline-panel-body")).toBeNull();
+
+    await userEvent.click(screen.getByRole("button", { name: "Expand panel" }));
+
+    expect(screen.getByRole("button", { name: "Generate insight" })).toBeInTheDocument();
+  });
+
+  it("persists inline panel font size preferences", async () => {
+    await saveProvider();
+    const { container } = render(<InsightPanel context={context({ source: "inline" })} />);
+
+    const shell = await waitFor(() => {
+      const element = container.querySelector<HTMLElement>(".app-shell");
+      if (!element) {
+        throw new Error("Expected app shell to render.");
+      }
+      return element;
+    });
+
+    expect(shell.dataset.inlineFontSize).toBe("large");
+
+    await userEvent.click(screen.getByRole("button", { name: "Larger text" }));
+
+    expect(shell.dataset.inlineFontSize).toBe("xl");
+    await expect(chrome.storage.local.get("videoInsight.inlinePanelPreferences")).resolves.toEqual({
+      "videoInsight.inlinePanelPreferences": { fontSize: "xl" }
+    });
+  });
+
+  it("does not show inline reading controls in the side panel", async () => {
+    await saveProvider();
+    const { container } = render(<InsightPanel context={context({ source: "sidepanel" })} />);
+
+    expect(await screen.findByRole("button", { name: "Generate insight" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Collapse panel" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Smaller text" })).not.toBeInTheDocument();
+    expect(container.querySelector(".inline-panel-body")).toBeNull();
+  });
 });

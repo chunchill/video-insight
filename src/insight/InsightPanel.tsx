@@ -3,6 +3,11 @@ import { generateInsightWithProvider } from "../providers/openAiCompatible";
 import type { InsightPanelContext } from "./insightPanelTypes";
 import type { ModelProviderConfig, OutputLanguage, ParsedInsightResult } from "../shared/types";
 import { getProviderSettings, selectActiveProvider } from "../storage/providerStorage";
+import {
+  getInlinePanelPreferences,
+  saveInlinePanelPreferences,
+  type InlinePanelFontSize
+} from "../storage/inlinePanelPreferences";
 
 function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "An unexpected error occurred.";
@@ -75,10 +80,13 @@ export function FallbackResult({ result }: { result: Extract<ParsedInsightResult
 export function InsightPanel({ context }: { context: InsightPanelContext }) {
   const isMountedRef = useRef(false);
   const requestIdRef = useRef(0);
+  const isInline = context.source === "inline";
   const [activeProvider, setActiveProvider] = useState<ModelProviderConfig | undefined>();
   const [language, setLanguage] = useState<OutputLanguage>("zh-CN");
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [fontSize, setFontSize] = useState<InlinePanelFontSize>("large");
   const [error, setError] = useState<string | undefined>();
   const [result, setResult] = useState<ParsedInsightResult | undefined>();
 
@@ -108,8 +116,21 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   }, []);
 
   useEffect(() => {
+    if (!isInline) {
+      return;
+    }
+
+    void getInlinePanelPreferences().then((preferences) => {
+      if (isMountedRef.current) {
+        setFontSize(preferences.fontSize);
+      }
+    });
+  }, [isInline]);
+
+  useEffect(() => {
     requestIdRef.current += 1;
     setIsGenerating(false);
+    setIsCollapsed(false);
     setError(undefined);
     setResult(undefined);
   }, [context.videoId]);
@@ -151,15 +172,27 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
     }
   }
 
+  function handleChangeFontSize(direction: "smaller" | "larger") {
+    const fontSizes: InlinePanelFontSize[] = ["small", "default", "large", "xl"];
+    const currentIndex = fontSizes.indexOf(fontSize);
+    const nextIndex =
+      direction === "larger"
+        ? Math.min(currentIndex + 1, fontSizes.length - 1)
+        : Math.max(currentIndex - 1, 0);
+    const nextFontSize = fontSizes[nextIndex];
+
+    if (nextFontSize === fontSize) {
+      return;
+    }
+
+    setFontSize(nextFontSize);
+    void saveInlinePanelPreferences({ fontSize: nextFontSize });
+  }
+
   const transcriptStatus = context.getTranscriptStatus?.();
-
-  return (
-    <main className="app-shell">
-      <header className="app-header">
-        <h1>Video Insight</h1>
-        <p>Open a YouTube video and generate transcript-based insights.</p>
-      </header>
-
+  const fontSizeLabel = fontSize === "xl" ? "XL" : fontSize[0].toUpperCase() + fontSize.slice(1);
+  const panelContent = (
+    <>
       <section className="panel-section" aria-label="Generation settings">
         {hasLoadedSettings && !activeProvider ? (
           <div className="notice">
@@ -190,6 +223,48 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
 
       {result?.kind === "structured" ? <StructuredResult result={result} /> : null}
       {result?.kind === "fallback" ? <FallbackResult result={result} /> : null}
+    </>
+  );
+
+  return (
+    <main
+      className={isInline ? "app-shell inline-panel-shell" : "app-shell"}
+      data-inline-font-size={isInline ? fontSize : undefined}
+    >
+      <header className="app-header">
+        <div>
+          <h1>Video Insight</h1>
+          <p>Open a YouTube video and generate transcript-based insights.</p>
+        </div>
+        {isInline ? (
+          <div className="inline-panel-controls" aria-label="Inline panel reading controls">
+            <div className="font-size-controls" aria-label="Panel text size">
+              <button
+                type="button"
+                aria-label="Smaller text"
+                disabled={fontSize === "small"}
+                onClick={() => handleChangeFontSize("smaller")}
+              >
+                A-
+              </button>
+              <span aria-live="polite">{fontSizeLabel}</span>
+              <button
+                type="button"
+                aria-label="Larger text"
+                disabled={fontSize === "xl"}
+                onClick={() => handleChangeFontSize("larger")}
+              >
+                A+
+              </button>
+            </div>
+            <button className="collapse-button" type="button" onClick={() => setIsCollapsed((value) => !value)}>
+              {isCollapsed ? "Expand panel" : "Collapse panel"}
+            </button>
+          </div>
+        ) : null}
+      </header>
+
+      {isInline ? (isCollapsed ? null : <div className="inline-panel-body">{panelContent}</div>) : panelContent}
     </main>
   );
 }

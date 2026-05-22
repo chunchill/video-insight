@@ -1,0 +1,73 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  ensureTranscriptVisible,
+  findTranscriptSegments,
+  getTranscriptSupportStatus
+} from "../src/content/transcriptAutomation";
+import {
+  englishTranscriptButtonHtml,
+  noTranscriptHtml,
+  visibleTranscriptHtml,
+  chineseTranscriptButtonHtml
+} from "../src/test/youtubeFixtures";
+
+describe("transcriptAutomation", () => {
+  beforeEach(() => {
+    document.body.innerHTML = "";
+  });
+
+  it("detects existing transcript segments", async () => {
+    document.body.innerHTML = visibleTranscriptHtml;
+
+    expect(findTranscriptSegments(document)).toHaveLength(2);
+    await expect(ensureTranscriptVisible(document, { timeoutMs: 10, pollMs: 5 })).resolves.toEqual({
+      ok: true,
+      status: "available"
+    });
+  });
+
+  it("clicks Chinese More and 内容转文字 when transcript is hidden", async () => {
+    document.body.innerHTML = chineseTranscriptButtonHtml;
+    const moreButton = document.querySelector<HTMLButtonElement>("[data-testid='more-button']")!;
+    const transcriptButton = document.querySelector<HTMLButtonElement>("[data-testid='transcript-button']")!;
+    const moreClick = vi.spyOn(moreButton, "click");
+    const transcriptClick = vi.spyOn(transcriptButton, "click");
+
+    const promise = ensureTranscriptVisible(document, { timeoutMs: 100, pollMs: 10 });
+    await Promise.resolve();
+
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<ytd-transcript-segment-renderer><div class="segment-timestamp">0:03</div><yt-formatted-string class="segment-text">自动打开文稿。</yt-formatted-string></ytd-transcript-segment-renderer>`
+    );
+    await expect(promise).resolves.toEqual({ ok: true, status: "opened" });
+    expect(moreClick).toHaveBeenCalled();
+    expect(transcriptClick).toHaveBeenCalled();
+  });
+
+  it("clicks English More and Show transcript when transcript is hidden", async () => {
+    document.body.innerHTML = englishTranscriptButtonHtml;
+    const transcriptButton = document.querySelector<HTMLButtonElement>("[data-testid='transcript-button']")!;
+    const transcriptClick = vi.spyOn(transcriptButton, "click");
+
+    const promise = ensureTranscriptVisible(document, { timeoutMs: 100, pollMs: 10 });
+    await Promise.resolve();
+    document.body.insertAdjacentHTML(
+      "beforeend",
+      `<ytd-transcript-segment-renderer><div class="segment-timestamp">0:12</div><yt-formatted-string class="segment-text">Transcript opened.</yt-formatted-string></ytd-transcript-segment-renderer>`
+    );
+    await expect(promise).resolves.toEqual({ ok: true, status: "opened" });
+    expect(transcriptClick).toHaveBeenCalled();
+  });
+
+  it("reports unsupported when no transcript controls exist", async () => {
+    document.body.innerHTML = noTranscriptHtml;
+
+    await expect(ensureTranscriptVisible(document, { timeoutMs: 20, pollMs: 5 })).resolves.toEqual({
+      ok: false,
+      status: "unavailable",
+      reason: "Current video does not expose a transcript for text insight."
+    });
+    expect(getTranscriptSupportStatus(document)).toBe("Transcript not available for this video");
+  });
+});

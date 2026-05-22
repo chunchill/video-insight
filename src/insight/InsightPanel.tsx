@@ -190,7 +190,6 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   }
 
   const transcriptStatus = context.getTranscriptStatus?.();
-  const fontSizeLabel = fontSize === "xl" ? "XL" : fontSize[0].toUpperCase() + fontSize.slice(1);
   const panelContent = (
     <>
       <section className="panel-section" aria-label="Generation settings">
@@ -242,23 +241,30 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
               <button
                 type="button"
                 aria-label="Smaller text"
+                title="Smaller text"
                 disabled={fontSize === "small"}
                 onClick={() => handleChangeFontSize("smaller")}
               >
                 A-
               </button>
-              <span aria-live="polite">{fontSizeLabel}</span>
               <button
                 type="button"
                 aria-label="Larger text"
+                title="Larger text"
                 disabled={fontSize === "xl"}
                 onClick={() => handleChangeFontSize("larger")}
               >
                 A+
               </button>
             </div>
-            <button className="collapse-button" type="button" onClick={() => setIsCollapsed((value) => !value)}>
-              {isCollapsed ? "Expand panel" : "Collapse panel"}
+            <button
+              className="collapse-button"
+              type="button"
+              aria-label={isCollapsed ? "Expand panel" : "Collapse panel"}
+              title={isCollapsed ? "Expand panel" : "Collapse panel"}
+              onClick={() => setIsCollapsed((value) => !value)}
+            >
+              {isCollapsed ? "v" : "^"}
             </button>
           </div>
         ) : null}

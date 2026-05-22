@@ -78,10 +78,9 @@ export const INLINE_PANEL_CSS = `
 }
 
 #video-insight-inline-root .app-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
+  position: relative;
+  min-height: 38px;
+  padding-right: 124px;
 }
 
 #video-insight-inline-root .app-header h1 {
@@ -96,10 +95,13 @@ export const INLINE_PANEL_CSS = `
 }
 
 #video-insight-inline-root .inline-panel-controls {
+  position: absolute;
+  top: 0;
+  right: 0;
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 #video-insight-inline-root .font-size-controls {
@@ -112,16 +114,11 @@ export const INLINE_PANEL_CSS = `
   padding: 3px;
 }
 
-#video-insight-inline-root .font-size-controls span {
-  min-width: 48px;
-  color: #3f4a5f;
-  font-size: 12px;
-  font-weight: 700;
-  text-align: center;
-}
-
 #video-insight-inline-root .font-size-controls button,
 #video-insight-inline-root .collapse-button {
+  width: 30px;
+  min-width: 30px;
+  height: 30px;
   min-height: 30px;
   border: 1px solid #cbd3e1;
   border-radius: 5px;
@@ -133,8 +130,7 @@ export const INLINE_PANEL_CSS = `
 }
 
 #video-insight-inline-root .font-size-controls button {
-  min-width: 34px;
-  padding: 4px 6px;
+  padding: 0;
 }
 
 #video-insight-inline-root .font-size-controls button:disabled {
@@ -143,7 +139,7 @@ export const INLINE_PANEL_CSS = `
 }
 
 #video-insight-inline-root .collapse-button {
-  padding: 4px 10px;
+  padding: 0;
   white-space: nowrap;
 }
 
@@ -265,12 +261,11 @@ export const INLINE_PANEL_CSS = `
 
 @media (max-width: 720px) {
   #video-insight-inline-root .app-header {
-    display: grid;
+    padding-right: 112px;
   }
 
   #video-insight-inline-root .inline-panel-controls {
-    justify-content: space-between;
-    width: 100%;
+    gap: 4px;
   }
 }
 `;

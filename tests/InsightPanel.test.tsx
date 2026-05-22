@@ -175,6 +175,22 @@ describe("InsightPanel", () => {
     expect(screen.getByRole("button", { name: "Generate insight" })).toBeInTheDocument();
   });
 
+  it("uses compact tooltip controls in the inline panel header", async () => {
+    await saveProvider();
+    render(<InsightPanel context={context({ source: "inline" })} />);
+
+    const collapseButton = await screen.findByRole("button", { name: "Collapse panel" });
+    const smallerButton = screen.getByRole("button", { name: "Smaller text" });
+    const largerButton = screen.getByRole("button", { name: "Larger text" });
+
+    expect(collapseButton).toHaveAttribute("title", "Collapse panel");
+    expect(collapseButton).toHaveTextContent("^");
+    expect(collapseButton).not.toHaveTextContent("Collapse panel");
+    expect(smallerButton).toHaveAttribute("title", "Smaller text");
+    expect(largerButton).toHaveAttribute("title", "Larger text");
+    expect(screen.queryByText("Large")).not.toBeInTheDocument();
+  });
+
   it("persists inline panel font size preferences", async () => {
     await saveProvider();
     const { container } = render(<InsightPanel context={context({ source: "inline" })} />);

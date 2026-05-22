@@ -6,8 +6,11 @@ Video Insight 是一个个人使用的浏览器插件，用来快速理解 YouTu
 
 ## 功能
 
-- 在 YouTube 页面右侧打开侧边栏。
-- 读取当前视频的可见字幕/转录文本。
+- 在 YouTube watch 页面右侧推荐栏附近直接显示 Video Insight 面板。
+- 点击页面面板里的 `Generate insight` 生成当前视频洞察。
+- 面板会尽量自动打开 YouTube 的 transcript / 转写文稿 UI，并读取当前视频的可见字幕/转录文本。
+- 切换到另一个视频时，会自动清空旧视频的洞察结果。
+- 浏览器扩展侧边栏仍可作为备用入口。
 - 配置自定义 AI 供应商、Base URL、API Key 和模型名。
 - 支持 OpenAI-compatible 接口，例如 OpenAI、硅基流动等兼容服务。
 - 支持中文和英文两种洞察输出语言。
@@ -21,7 +24,8 @@ Video Insight 是一个个人使用的浏览器插件，用来快速理解 YouTu
 
 ## 当前限制
 
-- 第一版只读取 YouTube 页面已经存在的字幕/转录文本。
+- 插件只读取 YouTube 页面已经存在或能够打开的字幕/转录文本。
+- 如果 YouTube 没有提供 `transcript` / `转写文稿` / `Show transcript`，文本洞察暂不支持，页面面板会显示提示或错误。
 - 暂不支持下载音频或自动语音转写。
 - 暂不提供云端账号、同步、历史记录或团队协作功能。
 - Provider Base URL 仅接受 HTTPS，避免 API Key 和字幕内容通过明文 HTTP 传输。
@@ -50,7 +54,7 @@ https://github.com/chunchill/video-insight/releases
 2. 下载最新版本里的插件压缩包，例如：
 
 ```text
-video-insight-extension-v0.1.0.zip
+video-insight-extension-v0.2.0.zip
 ```
 
 3. 解压这个 zip 文件。
@@ -169,15 +173,25 @@ edge://extensions/
 ## 使用插件
 
 1. 打开一个 YouTube 视频页面。
-2. 确认该视频有可用字幕/转录文本。更稳妥的做法是先在 YouTube 视频下方找到并点击 `转写文稿`，让 YouTube 把视频内容转成文字并显示在页面上；如果页面没有直接显示这个入口，可以先点击视频简介区域的 `更多`，再查找 `转写文稿`。
-3. 转写文稿显示出来后，再点击浏览器 Extension 工具栏里的 `Video Insight` 扩展图标，打开侧边栏。
-4. 选择输出语言：
+2. 在 YouTube 右侧推荐栏附近找到 `Video Insight` 页面面板。
+3. 选择输出语言：
    - `Chinese (Simplified)`
    - `English`
-5. 点击 `Generate insight`。
-6. 等待模型返回洞察结果。
+4. 点击页面面板里的 `Generate insight`。
+5. 等待面板自动打开 YouTube 的转写文稿并返回洞察结果。
 
-如果当前视频没有检测到字幕，插件会显示无字幕提示。第一版不会尝试下载音频或做语音转写。
+通常不需要先手动打开转写文稿。只有当页面面板提示 YouTube 没有自动加载 transcript 时，再手动打开：
+
+- 中文 YouTube 页面：展开视频简介区域的 `更多`，找到 `转写文稿`，点击 `内容转文字`。
+- 英文 YouTube 页面：展开视频简介区域的 `More`，找到 `Transcript`，点击 `Show transcript`。
+
+手动打开后，再回到 `Video Insight` 页面面板点击 `Generate insight`。
+
+如果 YouTube 不提供 `transcript`、`转写文稿` 或 `Show transcript`，插件无法生成文本洞察，面板会显示提示或错误。插件不会下载音频或做自动语音转写。
+
+如果页面内联面板没有出现，仍可以点击浏览器 Extension 工具栏里的 `Video Insight` 扩展图标，打开浏览器扩展侧边栏作为备用入口。
+
+切换到另一个 YouTube 视频时，页面面板会自动清空上一个视频的洞察结果。
 
 ## 开发命令
 
@@ -233,7 +247,9 @@ dist/                         构建后的插件目录
 
 ### 为什么点击生成后提示没有字幕？
 
-第一版只读取 YouTube 页面中已经可用的字幕/转录文本。如果视频没有字幕，或者页面没有加载出 transcript segments，插件无法生成洞察。
+插件只读取 YouTube 页面中已经可用或能够自动打开的字幕/转录文本。如果视频没有字幕，或者 YouTube 没有暴露 `transcript` / `转写文稿` / `Show transcript`，插件无法生成文本洞察。
+
+如果页面面板提示 transcript 没有自动加载，可以手动打开转写文稿后重试：中文页面展开 `更多`，找到 `转写文稿` 并点击 `内容转文字`；英文页面展开 `More`，找到 `Transcript` 并点击 `Show transcript`。
 
 ### 可以使用硅基流动吗？
 

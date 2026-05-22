@@ -1,4 +1,5 @@
 import type { TranscriptPayload, TranscriptSegment, VideoMeta } from "../shared/types";
+import { findTranscriptSegments } from "./transcriptAutomation";
 
 export type TranscriptExtractionResult =
   | { ok: true; transcript: TranscriptPayload }
@@ -28,16 +29,6 @@ function extractVideoMeta(doc: Document, url: URL): VideoMeta {
   };
 }
 
-function extractVisibleTranscriptSegments(doc: Document): TranscriptSegment[] {
-  return Array.from(doc.querySelectorAll("ytd-transcript-segment-renderer"))
-    .map<TranscriptSegment | undefined>((segment) => {
-      const start = segment.querySelector(".segment-timestamp")?.textContent?.trim();
-      const text = segment.querySelector(".segment-text")?.textContent?.trim();
-      return text ? (start ? { start, text } : { text }) : undefined;
-    })
-    .filter((segment): segment is TranscriptSegment => Boolean(segment));
-}
-
 function toPlainText(segments: TranscriptSegment[]): string {
   return segments.map((segment) => (segment.start ? `[${segment.start}] ${segment.text}` : segment.text)).join("\n");
 }
@@ -47,7 +38,7 @@ export function extractTranscriptFromPage(doc: Document, url: URL): TranscriptEx
     return { ok: false, reason: "Please open a YouTube video page." };
   }
 
-  const segments = extractVisibleTranscriptSegments(doc);
+  const segments = findTranscriptSegments(doc);
   if (segments.length === 0) {
     return { ok: false, reason: "No transcript segments were detected on this YouTube page." };
   }

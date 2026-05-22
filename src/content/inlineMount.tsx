@@ -60,6 +60,7 @@ export function mountInlinePanel(doc: Document, videoId: string): HTMLElement {
 
   ensureInlineStyle(doc, rootElement);
   const appElement = ensureInlineAppHost(doc, rootElement);
+  appElement.dataset.videoInsightVideoId = videoId;
 
   reactRoot = reactRoot ?? createRoot(appElement);
   flushSync(() => {

@@ -22,6 +22,18 @@ describe("inlineMount", () => {
     expect(document.querySelector("#secondary #video-insight-inline-root")).toBeTruthy();
   });
 
+  it("updates the rendered video id when remounting the same root", () => {
+    const root = mountInlinePanel(document, "abc123");
+    const appHost = root.querySelector<HTMLElement>("[data-video-insight-inline-app]");
+
+    expect(appHost?.dataset.videoInsightVideoId).toBe("abc123");
+
+    const sameRoot = mountInlinePanel(document, "def456");
+
+    expect(sameRoot).toBe(root);
+    expect(appHost?.dataset.videoInsightVideoId).toBe("def456");
+  });
+
   it("falls back to document body when secondary column is missing", () => {
     const parent = findInlineMountParent(document);
     expect(parent).toBe(document.body);

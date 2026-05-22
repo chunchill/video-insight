@@ -35,7 +35,7 @@ function ensureInlinePanelMounted(): void {
 createYouTubePageObserver((state) => {
   if (state.isWatchPage && state.videoId) {
     currentVideoId = state.videoId;
-    ensureInlinePanelMounted();
+    mountInlinePanel(document, state.videoId);
   } else {
     currentVideoId = undefined;
     unmountInlinePanel(document);

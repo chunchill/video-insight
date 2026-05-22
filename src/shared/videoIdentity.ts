@@ -10,7 +10,8 @@ export function getYouTubeVideoId(value: string | URL): string | undefined {
       return undefined;
     }
 
-    return url.searchParams.get("v") ?? undefined;
+    const videoId = url.searchParams.get("v");
+    return videoId || undefined;
   } catch {
     return undefined;
   }

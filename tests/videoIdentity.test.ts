@@ -14,6 +14,11 @@ describe("videoIdentity", () => {
     expect(getYouTubeVideoId("http://www.youtube.com/watch?v=abc123")).toBeUndefined();
   });
 
+  it("rejects missing and empty video ids", () => {
+    expect(getYouTubeVideoId("https://www.youtube.com/watch")).toBeUndefined();
+    expect(getYouTubeVideoId("https://www.youtube.com/watch?v=")).toBeUndefined();
+  });
+
   it("compares current and next video ids", () => {
     expect(isSameVideo("abc123", "https://www.youtube.com/watch?v=abc123")).toBe(true);
     expect(isSameVideo("abc123", "https://www.youtube.com/watch?v=def456")).toBe(false);

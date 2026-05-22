@@ -13,7 +13,10 @@ function classicContentScriptPlugin() {
         bundle: true,
         format: "iife",
         platform: "browser",
-        target: "chrome114"
+        target: "chrome114",
+        minify: true,
+        define: { "process.env.NODE_ENV": "\"production\"" },
+        legalComments: "none"
       });
     }
   };

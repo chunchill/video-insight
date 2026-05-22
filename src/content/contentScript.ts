@@ -1,4 +1,4 @@
-import { mountInlinePanel, unmountInlinePanel } from "./inlineMount";
+import { isInlinePanelMounted, mountInlinePanel, unmountInlinePanel } from "./inlineMount";
 import { ensureTranscriptVisible } from "./transcriptAutomation";
 import { createYouTubePageObserver } from "./youtubePageObserver";
 import { extractTranscriptFromPage } from "./youtubeTranscript";
@@ -22,10 +22,31 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   return true;
 });
 
+let currentVideoId: string | undefined;
+
+function ensureInlinePanelMounted(): void {
+  if (!currentVideoId || isInlinePanelMounted(document)) {
+    return;
+  }
+
+  mountInlinePanel(document, currentVideoId);
+}
+
 createYouTubePageObserver((state) => {
   if (state.isWatchPage && state.videoId) {
-    mountInlinePanel(document, state.videoId);
+    currentVideoId = state.videoId;
+    ensureInlinePanelMounted();
   } else {
+    currentVideoId = undefined;
     unmountInlinePanel(document);
   }
 }).start();
+
+const inlineHealthObserver = new MutationObserver(() => {
+  ensureInlinePanelMounted();
+});
+
+inlineHealthObserver.observe(document.documentElement, {
+  childList: true,
+  subtree: true
+});

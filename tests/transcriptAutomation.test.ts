@@ -29,17 +29,25 @@ describe("transcriptAutomation", () => {
   it("clicks Chinese More and 内容转文字 when transcript is hidden", async () => {
     document.body.innerHTML = chineseTranscriptButtonHtml;
     const moreButton = document.querySelector<HTMLButtonElement>("[data-testid='more-button']")!;
-    const transcriptButton = document.querySelector<HTMLButtonElement>("[data-testid='transcript-button']")!;
-    const moreClick = vi.spyOn(moreButton, "click");
-    const transcriptClick = vi.spyOn(transcriptButton, "click");
+    const moreClick = vi.spyOn(moreButton, "click").mockImplementation(() => {
+      window.setTimeout(() => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<button data-testid="transcript-button">内容转文字</button>`
+        );
+      }, 0);
+    });
 
     const promise = ensureTranscriptVisible(document, { timeoutMs: 100, pollMs: 10 });
-    await Promise.resolve();
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
 
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      `<ytd-transcript-segment-renderer><div class="segment-timestamp">0:03</div><yt-formatted-string class="segment-text">自动打开文稿。</yt-formatted-string></ytd-transcript-segment-renderer>`
-    );
+    const transcriptButton = document.querySelector<HTMLButtonElement>("[data-testid='transcript-button']")!;
+    const transcriptClick = vi.spyOn(transcriptButton, "click").mockImplementation(() => {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<ytd-transcript-segment-renderer><div class="segment-timestamp">0:03</div><yt-formatted-string class="segment-text">自动打开文稿。</yt-formatted-string></ytd-transcript-segment-renderer>`
+      );
+    });
     await expect(promise).resolves.toEqual({ ok: true, status: "opened" });
     expect(moreClick).toHaveBeenCalled();
     expect(transcriptClick).toHaveBeenCalled();
@@ -47,16 +55,31 @@ describe("transcriptAutomation", () => {
 
   it("clicks English More and Show transcript when transcript is hidden", async () => {
     document.body.innerHTML = englishTranscriptButtonHtml;
-    const transcriptButton = document.querySelector<HTMLButtonElement>("[data-testid='transcript-button']")!;
-    const transcriptClick = vi.spyOn(transcriptButton, "click");
+    const moreButton = document.querySelector<HTMLButtonElement>("[data-testid='more-button']")!;
+    const moreClick = vi.spyOn(moreButton, "click").mockImplementation(() => {
+      window.setTimeout(() => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<button data-testid="transcript-button">
+            <span>Show transcript</span>
+            <span class="visually-hidden"> keyboard shortcut t </span>
+          </button>`
+        );
+      }, 0);
+    });
 
     const promise = ensureTranscriptVisible(document, { timeoutMs: 100, pollMs: 10 });
-    await Promise.resolve();
-    document.body.insertAdjacentHTML(
-      "beforeend",
-      `<ytd-transcript-segment-renderer><div class="segment-timestamp">0:12</div><yt-formatted-string class="segment-text">Transcript opened.</yt-formatted-string></ytd-transcript-segment-renderer>`
-    );
+    await new Promise((resolve) => window.setTimeout(resolve, 0));
+
+    const transcriptButton = document.querySelector<HTMLButtonElement>("[data-testid='transcript-button']")!;
+    const transcriptClick = vi.spyOn(transcriptButton, "click").mockImplementation(() => {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<ytd-transcript-segment-renderer><div class="segment-timestamp">0:12</div><yt-formatted-string class="segment-text">Transcript opened.</yt-formatted-string></ytd-transcript-segment-renderer>`
+      );
+    });
     await expect(promise).resolves.toEqual({ ok: true, status: "opened" });
+    expect(moreClick).toHaveBeenCalled();
     expect(transcriptClick).toHaveBeenCalled();
   });
 

@@ -31,7 +31,6 @@ export const chineseTranscriptButtonHtml = `
   <button data-testid="more-button">更多</button>
   <section>
     <h3>转写文稿</h3>
-    <button data-testid="transcript-button">内容转文字</button>
   </section>
 `;
 
@@ -39,7 +38,6 @@ export const englishTranscriptButtonHtml = `
   <button data-testid="more-button">More</button>
   <section>
     <h3>Transcript</h3>
-    <button data-testid="transcript-button">Show transcript</button>
   </section>
 `;
 

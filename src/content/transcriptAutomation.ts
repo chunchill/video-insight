@@ -30,13 +30,38 @@ function clickableElements(doc: Document): HTMLElement[] {
 function findClickableByText(doc: Document, labels: string[]): HTMLElement | undefined {
   const normalizedLabels = labels.map((label) => normalizeText(label));
 
-  return clickableElements(doc).find((element) => normalizedLabels.includes(normalizeText(element.textContent)));
+  return clickableElements(doc).find((element) => {
+    const searchableText = normalizeText(
+      [element.textContent, element.getAttribute("aria-label"), element.getAttribute("title")].filter(Boolean).join(" ")
+    );
+
+    return normalizedLabels.some((label) => searchableText === label || searchableText.includes(label));
+  });
 }
 
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
   });
+}
+
+async function waitForClickableByText(
+  doc: Document,
+  labels: string[],
+  options: TranscriptWaitOptions
+): Promise<HTMLElement | undefined> {
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < options.timeoutMs) {
+    const element = findClickableByText(doc, labels);
+    if (element) {
+      return element;
+    }
+
+    await wait(options.pollMs);
+  }
+
+  return findClickableByText(doc, labels);
 }
 
 export function findTranscriptSegments(doc: Document): TranscriptSegment[] {
@@ -73,7 +98,7 @@ export async function ensureTranscriptVisible(
 
   findClickableByText(doc, ["更多", "More"])?.click();
 
-  const transcriptButton = findClickableByText(doc, ["内容转文字", "Show transcript"]);
+  const transcriptButton = await waitForClickableByText(doc, ["内容转文字", "Show transcript"], waitOptions);
   if (!transcriptButton) {
     return { ok: false, status: "unavailable", reason: UNAVAILABLE_REASON };
   }

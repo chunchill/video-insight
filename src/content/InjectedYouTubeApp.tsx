@@ -1,6 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { InsightPanel } from "../insight/InsightPanel";
 import type { InsightPanelContext } from "../insight/insightPanelTypes";
+import { VIDEO_INSIGHT_OPEN_OPTIONS } from "../shared/extensionMessages";
 import type { TranscriptPayload } from "../shared/types";
 import { ensureTranscriptVisible, getTranscriptSupportStatus } from "./transcriptAutomation";
 import { extractTranscriptFromPage } from "./youtubeTranscript";
@@ -20,7 +21,7 @@ async function getInlineTranscript(): Promise<TranscriptPayload> {
 }
 
 function openOptionsPage() {
-  chrome.runtime.openOptionsPage?.();
+  void chrome.runtime.sendMessage({ type: VIDEO_INSIGHT_OPEN_OPTIONS });
 }
 
 export function InjectedYouTubeApp({ videoId }: { videoId?: string }) {

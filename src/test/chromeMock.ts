@@ -47,7 +47,8 @@ export function installChromeMock() {
         }
       },
       runtime: {
-        openOptionsPage: vi.fn()
+        openOptionsPage: vi.fn(),
+        sendMessage: vi.fn(async () => undefined)
       }
     }
   });

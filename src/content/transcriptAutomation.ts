@@ -16,6 +16,7 @@ const DEFAULT_WAIT_OPTIONS: TranscriptWaitOptions = {
 
 const UNAVAILABLE_REASON = "Current video does not expose a transcript for text insight.";
 const MANUAL_REASON = "Transcript controls were found, but transcript text did not load. Try opening transcript manually.";
+const TRANSCRIPT_BUTTON_LABELS = ["内容转文字", "Show transcript"];
 
 function normalizeText(value: string | null | undefined): string {
   return value?.replace(/\s+/g, " ").trim().toLowerCase() ?? "";
@@ -30,13 +31,65 @@ function clickableElements(doc: Document): HTMLElement[] {
 function findClickableByText(doc: Document, labels: string[]): HTMLElement | undefined {
   const normalizedLabels = labels.map((label) => normalizeText(label));
 
-  return clickableElements(doc).find((element) => {
-    const searchableText = normalizeText(
-      [element.textContent, element.getAttribute("aria-label"), element.getAttribute("title")].filter(Boolean).join(" ")
-    );
+  return clickableElements(doc)
+    .filter((element) => {
+      const searchableText = normalizeText(
+        [element.textContent, element.getAttribute("aria-label"), element.getAttribute("title")].filter(Boolean).join(" ")
+      );
 
-    return normalizedLabels.some((label) => searchableText === label || searchableText.includes(label));
-  });
+      return normalizedLabels.some((label) => searchableText === label || searchableText.includes(label));
+    })
+    .sort((left, right) => clickablePriority(left) - clickablePriority(right))[0];
+}
+
+function clickablePriority(element: HTMLElement): number {
+  if (element.tagName === "BUTTON") {
+    return 0;
+  }
+
+  if (element.getAttribute("role") === "button") {
+    return 1;
+  }
+
+  return 2;
+}
+
+function clickYouTubeControl(element: HTMLElement): void {
+  const clickTarget = element.matches("button, [role='button']")
+    ? element
+    : element.querySelector<HTMLElement>("button, [role='button']") ?? element;
+
+  clickTarget.click();
+}
+
+function isMoreDisclosure(element: HTMLElement): boolean {
+  const searchableText = normalizeText(
+    [element.textContent, element.getAttribute("aria-label"), element.getAttribute("title")].filter(Boolean).join(" ")
+  );
+
+  return (
+    searchableText === "more" ||
+    searchableText === "...more" ||
+    searchableText === "show more" ||
+    searchableText === "更多"
+  );
+}
+
+function findMoreDisclosure(doc: Document): HTMLElement | undefined {
+  return clickableElements(doc)
+    .filter(isMoreDisclosure)
+    .sort((left, right) => {
+      const leftIsDescription = left.closest("ytd-watch-metadata, #description, #description-inline-expander");
+      const rightIsDescription = right.closest("ytd-watch-metadata, #description, #description-inline-expander");
+      if (leftIsDescription && !rightIsDescription) {
+        return -1;
+      }
+      if (!leftIsDescription && rightIsDescription) {
+        return 1;
+      }
+
+      return clickablePriority(left) - clickablePriority(right);
+    })[0];
 }
 
 function wait(ms: number): Promise<void> {
@@ -79,7 +132,7 @@ export function getTranscriptSupportStatus(doc: Document): string {
     return "Transcript available";
   }
 
-  if (findClickableByText(doc, ["内容转文字", "Show transcript"])) {
+  if (findClickableByText(doc, TRANSCRIPT_BUTTON_LABELS)) {
     return "Transcript can be opened";
   }
 
@@ -96,14 +149,24 @@ export async function ensureTranscriptVisible(
     return { ok: true, status: "available" };
   }
 
-  findClickableByText(doc, ["更多", "More"])?.click();
+  const visibleTranscriptButton = findClickableByText(doc, TRANSCRIPT_BUTTON_LABELS);
+  if (visibleTranscriptButton) {
+    clickYouTubeControl(visibleTranscriptButton);
+  } else {
+    const moreButton = findMoreDisclosure(doc);
+    if (moreButton) {
+      clickYouTubeControl(moreButton);
+    }
+  }
 
-  const transcriptButton = await waitForClickableByText(doc, ["内容转文字", "Show transcript"], waitOptions);
+  const transcriptButton = await waitForClickableByText(doc, TRANSCRIPT_BUTTON_LABELS, waitOptions);
   if (!transcriptButton) {
     return { ok: false, status: "unavailable", reason: UNAVAILABLE_REASON };
   }
 
-  transcriptButton.click();
+  if (transcriptButton !== visibleTranscriptButton) {
+    clickYouTubeControl(transcriptButton);
+  }
 
   const startedAt = Date.now();
   while (Date.now() - startedAt < waitOptions.timeoutMs) {

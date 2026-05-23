@@ -80,4 +80,30 @@ describe("youtubeTranscript", () => {
       "https://www.youtube.com/api/timedtext?v=abc123&lang=en&fmt=json3"
     );
   });
+
+  it("reports unavailable caption tracks when YouTube returns empty JSON", async () => {
+    document.documentElement.innerHTML = `
+      <html>
+        <body>
+          <h1>Empty Caption Track</h1>
+          <script>
+            var ytInitialPlayerResponse = {"captions":{"playerCaptionsTracklistRenderer":{"captionTracks":[{"baseUrl":"https://www.youtube.com/api/timedtext?v=abc123&lang=en","languageCode":"en"}]}}};
+          </script>
+        </body>
+      </html>
+    `;
+    const fetchCaption = vi.fn(async () => ({
+      ok: true,
+      json: async () => {
+        throw new SyntaxError("Unexpected end of JSON input");
+      }
+    })) as unknown as typeof fetch;
+
+    const result = await extractTranscriptFromCaptionTracks(document, watchUrl, fetchCaption);
+
+    expect(result).toEqual({
+      ok: false,
+      reason: "Caption track did not contain transcript text."
+    });
+  });
 });

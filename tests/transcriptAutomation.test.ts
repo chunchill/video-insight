@@ -83,6 +83,31 @@ describe("transcriptAutomation", () => {
     expect(transcriptClick).toHaveBeenCalled();
   });
 
+  it("clicks the native button inside YouTube button wrappers", async () => {
+    document.body.innerHTML = `
+      <button data-testid="unrelated-more">More actions</button>
+      <yt-button-shape data-testid="transcript-wrapper">
+        <button data-testid="transcript-button" aria-label="Show transcript">Show transcript</button>
+      </yt-button-shape>
+    `;
+    const unrelatedMore = document.querySelector<HTMLButtonElement>("[data-testid='unrelated-more']")!;
+    const transcriptButton = document.querySelector<HTMLButtonElement>("[data-testid='transcript-button']")!;
+    const moreClick = vi.spyOn(unrelatedMore, "click");
+    const transcriptClick = vi.spyOn(transcriptButton, "click").mockImplementation(() => {
+      document.body.insertAdjacentHTML(
+        "beforeend",
+        `<ytd-transcript-segment-renderer><div class="segment-timestamp">0:18</div><yt-formatted-string class="segment-text">Nested transcript button opened.</yt-formatted-string></ytd-transcript-segment-renderer>`
+      );
+    });
+
+    await expect(ensureTranscriptVisible(document, { timeoutMs: 100, pollMs: 10 })).resolves.toEqual({
+      ok: true,
+      status: "opened"
+    });
+    expect(moreClick).not.toHaveBeenCalled();
+    expect(transcriptClick).toHaveBeenCalled();
+  });
+
   it("reports unsupported when no transcript controls exist", async () => {
     document.body.innerHTML = noTranscriptHtml;
 

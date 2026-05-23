@@ -56,6 +56,13 @@ describe("inlineMount", () => {
     expect(style?.textContent).toContain('[data-inline-collapsed="true"][data-settings-open="true"]');
     expect(style?.textContent).toContain("position: absolute");
     expect(style?.textContent).toContain("right: 0");
+    expect(style?.textContent).toContain("width: max-content");
+    expect(style?.textContent).toContain("margin: 14px 0 0 auto");
+    expect(style?.textContent).toContain("background: #f2f2f2");
+    expect(style?.textContent).toContain("color: #0f0f0f");
+    expect(style?.textContent).toContain("align-items: center");
+    expect(style?.textContent).toContain("justify-content: center");
+    expect(style?.textContent).toContain("border: 0");
     expect(style?.textContent).not.toMatch(/(^|\s)(:root|body|\*)\s*\{/);
   });
 

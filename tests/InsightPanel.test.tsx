@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { generateInsightWithProvider } from "../src/providers/openAiCompatible";
@@ -63,9 +63,14 @@ async function saveProvider() {
 }
 
 beforeEach(async () => {
+  vi.useRealTimers();
   installChromeMock();
   await chrome.storage.local.clear();
   vi.mocked(generateInsightWithProvider).mockReset();
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("InsightPanel", () => {
@@ -107,6 +112,7 @@ describe("InsightPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: "Generate insight" }));
 
     expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
+    expect(screen.queryByRole("tab", { name: "Insight" })).not.toBeInTheDocument();
     expect(screen.getByText("Context matters")).toBeInTheDocument();
     expect(screen.getByText("Workflow shift")).toBeInTheDocument();
     expect(screen.getByText("Transcript may omit visual context.")).toBeInTheDocument();
@@ -124,6 +130,32 @@ describe("InsightPanel", () => {
     );
   });
 
+  it("hides transient transcript and success notices after a short delay", async () => {
+    await saveProvider();
+    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+
+    render(
+      <InsightPanel
+        context={context({
+          getTranscriptStatus: () => "Transcript available"
+        })}
+      />
+    );
+
+    expect(await screen.findByText("Transcript available")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.queryByText("Transcript available")).not.toBeInTheDocument();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: "Generate insight" }));
+    expect(await screen.findByText("Insight saved for this video.")).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.queryByText("Insight saved for this video.")).not.toBeInTheDocument();
+    });
+  });
+
   it("loads and displays transcript before generation", async () => {
     await saveProvider();
     vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
@@ -139,6 +171,43 @@ describe("InsightPanel", () => {
     await userEvent.click(screen.getByRole("button", { name: "Generate insight" }));
     expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
     expect(getTranscript).toHaveBeenCalledTimes(2);
+  });
+
+  it("uses tabs when insight and transcript are both open", async () => {
+    await saveProvider();
+    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+    const getTranscript = vi.fn(async () => transcript);
+
+    render(<InsightPanel context={context({ source: "inline", getTranscript })} />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Show transcript" }));
+    expect(await screen.findByText("[0:03] AI systems change workflows.")).toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("button", { name: "Generate insight" }));
+
+    expect(await screen.findByRole("tab", { name: "Insight" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByRole("tab", { name: "Transcript" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByText("AI changes complete workflows.")).toBeInTheDocument();
+    expect(screen.queryByText("[0:03] AI systems change workflows.")).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole("tab", { name: "Transcript" }));
+
+    expect(screen.getByRole("tab", { name: "Insight" })).toHaveAttribute("aria-selected", "false");
+    expect(screen.getByRole("tab", { name: "Transcript" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("[0:03] AI systems change workflows.")).toBeInTheDocument();
+    expect(screen.queryByText("AI changes complete workflows.")).not.toBeInTheDocument();
+  });
+
+  it("moves inline transcript action into the bottom control group", async () => {
+    await saveProvider();
+    const { container } = render(<InsightPanel context={context({ source: "inline" })} />);
+
+    await screen.findByRole("button", { name: "Generate insight" });
+
+    expect(container.querySelector(".panel-section .secondary-button")).toBeNull();
+    const actions = container.querySelector(".inline-result-actions");
+    expect(actions).toBeTruthy();
+    expect(actions?.querySelectorAll("button")[0]).toHaveAccessibleName("Show transcript");
   });
 
   it("uses context settings action when no provider exists", async () => {

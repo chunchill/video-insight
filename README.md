@@ -9,10 +9,11 @@ Video Insight 是一个个人使用的浏览器插件，用来快速理解 YouTu
 - 在 YouTube watch 页面右侧推荐栏附近直接显示 Video Insight 面板。
 - 点击页面面板里的 `Generate insight` 生成当前视频洞察。
 - 页面面板支持内部滚动阅读长洞察，不会带着 YouTube 视频页面一起滚动。
-- 页面面板右上角提供收缩 / 展开按钮和设置菜单，右下角提供导出洞察、字体缩小、字体放大按钮。
+- 页面面板右上角提供收缩 / 展开按钮和设置菜单，右下角提供展示 Transcript、导出洞察、字体缩小、字体放大按钮。
 - 支持导出 / 导入模型供应商配置 JSON，包含 Provider、Base URL、模型名和 API Key。
 - 面板会优先读取 YouTube caption track，再回退到自动打开 transcript / 转写文稿 UI。
 - 支持展示当前视频 Transcript。
+- 当 Insight 和 Transcript 同时打开时，会用 `Insight` / `Transcript` 两个 tab 分开展示，避免内容过长。
 - 支持按视频保存洞察结果，刷新页面或回到同一视频时会自动恢复。
 - 支持将每次洞察导出为 Markdown 文件。
 - 切换到另一个视频时，会加载该视频已保存的洞察；没有保存记录时显示空结果。
@@ -60,7 +61,7 @@ https://github.com/chunchill/video-insight/releases
 2. 下载最新版本里的插件压缩包，例如：
 
 ```text
-video-insight-extension-v0.4.0.zip
+video-insight-extension-v0.4.1.zip
 ```
 
 3. 解压这个 zip 文件。
@@ -194,10 +195,11 @@ edge://extensions/
 
 页面面板右下角提供文本和结果操作：
 
+- `T`：显示或刷新当前视频的 Transcript。
 - `Export insight`：将当前洞察和 Transcript 导出为 Markdown 文件。
 - `A-` / `A+`：即时调小或调大面板字体。当前支持 `Small`、`Default`、`Large`、`XL` 四档，默认是 `Large`，并会保存在浏览器本地。
 
-页面面板还提供 `Show transcript` 按钮，可以查看当前视频的 Transcript。点击 `Generate insight` 时，插件会先尝试加载 Transcript，成功后才会调用模型生成洞察。
+点击 `Generate insight` 时，插件会先尝试加载 Transcript，成功后才会调用模型生成洞察。当 Insight 和 Transcript 同时打开时，面板会显示 `Insight` / `Transcript` 两个 tab；如果只有 Insight，则不显示 tab，直接展示洞察内容。
 
 通常不需要先手动打开转写文稿。插件会优先尝试从 YouTube 页面里的 caption track 读取 Transcript；如果不可用，再尝试自动打开转写文稿。只有当页面面板提示 YouTube 没有自动加载 transcript 时，再手动打开：
 

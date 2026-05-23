@@ -14,7 +14,7 @@ async function getInlineTranscript(): Promise<TranscriptPayload> {
 
   const ensureResult = await ensureTranscriptVisible(document);
   if (!ensureResult.ok) {
-    throw new Error(directResult.reason || ensureResult.reason);
+    throw new Error(ensureResult.reason || directResult.reason);
   }
 
   const extractionResult = extractTranscriptFromPage(document, new URL(window.location.href));

@@ -194,7 +194,14 @@ export async function extractTranscriptFromCaptionTracks(
     return { ok: false, reason: "Caption track could not be loaded for this video." };
   }
 
-  const segments = parseJson3Segments(await response.json());
+  let captionJson: unknown;
+  try {
+    captionJson = await response.json();
+  } catch {
+    return { ok: false, reason: "Caption track did not contain transcript text." };
+  }
+
+  const segments = parseJson3Segments(captionJson);
   if (segments.length === 0) {
     return { ok: false, reason: "Caption track did not contain transcript text." };
   }

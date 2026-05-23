@@ -108,23 +108,27 @@ export const INLINE_PANEL_CSS = `
 }
 
 #video-insight-inline-root .inline-header-icon-button {
-  width: 32px;
-  min-width: 32px;
-  height: 32px;
-  min-height: 32px;
-  border: 1px solid #d4dbea;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  border: 0;
   border-radius: 999px;
-  background: #fff;
-  color: #172033;
+  background: #f2f2f2;
+  color: #0f0f0f;
   cursor: pointer;
   font-size: 16px;
+  font-weight: 700;
   line-height: 1;
+  padding: 0;
 }
 
 #video-insight-inline-root .inline-header-icon-button:hover,
 #video-insight-inline-root .inline-header-icon-button[aria-expanded="true"] {
-  border-color: #b6c2d6;
-  background: #eef3ff;
+  background: #e5e5e5;
 }
 
 #video-insight-inline-root .inline-settings-menu {
@@ -154,36 +158,45 @@ export const INLINE_PANEL_CSS = `
 
 #video-insight-inline-root .inline-result-actions {
   position: sticky;
-  right: 8px;
-  bottom: 8px;
+  right: 10px;
+  bottom: 10px;
   justify-self: end;
-  display: inline-flex;
-  gap: 6px;
-  margin-top: 12px;
-  border: 1px solid #dbe1ec;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.94);
-  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.12);
-  padding: 4px;
+  display: flex;
+  gap: 8px;
+  width: max-content;
+  margin: 14px 0 0 auto;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
 }
 
 #video-insight-inline-root .inline-result-actions button {
-  width: 30px;
-  min-width: 30px;
-  height: 30px;
-  min-height: 30px;
-  border: 1px solid #cbd3e1;
-  border-radius: 5px;
-  background: #fff;
-  color: #172033;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  min-width: 34px;
+  height: 34px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  background: #f2f2f2;
+  color: #0f0f0f;
   cursor: pointer;
   font-size: 12px;
   font-weight: 700;
   padding: 0;
+  line-height: 1;
+}
+
+#video-insight-inline-root .inline-result-actions button:hover:not(:disabled) {
+  background: #e5e5e5;
 }
 
 #video-insight-inline-root .inline-result-actions button:disabled {
-  color: #98a5bd;
+  background: #f1f1f1;
+  color: #909090;
   cursor: not-allowed;
 }
 
@@ -240,6 +253,39 @@ export const INLINE_PANEL_CSS = `
   padding: 8px 10px;
   font-size: 13px;
   line-height: 1.4;
+}
+
+#video-insight-inline-root .content-tabs-section {
+  gap: 10px;
+}
+
+#video-insight-inline-root .content-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  border-radius: 8px;
+  background: #e9edf4;
+  padding: 4px;
+}
+
+#video-insight-inline-root .content-tabs button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #4d586c;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+#video-insight-inline-root .content-tabs button[aria-selected="true"] {
+  background: #fff;
+  color: #172033;
+  box-shadow: 0 1px 3px rgba(23, 32, 51, 0.12);
+}
+
+#video-insight-inline-root .content-tabs-section [role="tabpanel"] > .panel-section {
+  margin-top: 0;
 }
 
 #video-insight-inline-root .primary-button,

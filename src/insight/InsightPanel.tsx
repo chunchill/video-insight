@@ -20,6 +20,11 @@ function getErrorMessage(error: unknown): string {
   return error instanceof Error ? error.message : "An unexpected error occurred.";
 }
 
+const isTestEnvironment =
+  (globalThis as { process?: { env?: { VITEST?: string } } }).process?.env?.VITEST === "true";
+const TRANSIENT_MESSAGE_MS = isTestEnvironment ? 100 : 4500;
+type ContentTab = "insight" | "transcript";
+
 export function StructuredResult({ result }: { result: Extract<ParsedInsightResult, { kind: "structured" }> }) {
   const { data } = result;
 
@@ -98,9 +103,13 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isTranscriptOpen, setIsTranscriptOpen] = useState(false);
+  const [activeContentTab, setActiveContentTab] = useState<ContentTab>("insight");
   const [fontSize, setFontSize] = useState<InlinePanelFontSize>("large");
   const [error, setError] = useState<string | undefined>();
   const [notice, setNotice] = useState<string | undefined>();
+  const [transcriptStatusNotice, setTranscriptStatusNotice] = useState<string | undefined>(() =>
+    context.getTranscriptStatus?.()
+  );
   const [transcript, setTranscript] = useState<TranscriptPayload | undefined>();
   const [result, setResult] = useState<ParsedInsightResult | undefined>();
 
@@ -163,6 +172,36 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   }, [isSettingsOpen]);
 
   useEffect(() => {
+    if (!notice) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setNotice((currentNotice) => (currentNotice === notice ? undefined : currentNotice));
+    }, TRANSIENT_MESSAGE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [notice]);
+
+  useEffect(() => {
+    if (!transcriptStatusNotice) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setTranscriptStatusNotice((currentNotice) =>
+        currentNotice === transcriptStatusNotice ? undefined : currentNotice
+      );
+    }, TRANSIENT_MESSAGE_MS);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [transcriptStatusNotice]);
+
+  useEffect(() => {
     let isCurrentVideo = true;
     requestIdRef.current += 1;
     setIsGenerating(false);
@@ -170,9 +209,11 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
     setIsCollapsed(false);
     setIsSettingsOpen(false);
     setIsTranscriptOpen(false);
+    setActiveContentTab("insight");
     setTranscript(undefined);
     setError(undefined);
     setNotice(undefined);
+    setTranscriptStatusNotice(context.getTranscriptStatus?.());
     setResult(undefined);
 
     void getSavedInsight(context.videoId).then((savedInsight) => {
@@ -244,6 +285,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
             result: generatedInsight
           });
         }
+        setActiveContentTab("insight");
         setNotice("Insight saved for this video.");
       }
     } catch (generateError: unknown) {
@@ -259,6 +301,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
 
   async function handleShowTranscript() {
     setIsTranscriptOpen(true);
+    setActiveContentTab("transcript");
     if (transcript) {
       return;
     }
@@ -339,7 +382,56 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
     );
   }
 
-  const transcriptStatus = context.getTranscriptStatus?.();
+  const transcriptContent = isTranscriptOpen ? (
+    <section className="panel-section" aria-label="Transcript">
+      <article className="insight-card transcript-card">
+        <h2>Transcript</h2>
+        {transcript ? (
+          <pre>{transcript.plainText}</pre>
+        ) : (
+          <p>{isLoadingTranscript ? "Loading transcript..." : "Transcript has not loaded yet."}</p>
+        )}
+      </article>
+    </section>
+  ) : null;
+  const insightContent =
+    result?.kind === "structured" ? (
+      <StructuredResult result={result} />
+    ) : result?.kind === "fallback" ? (
+      <FallbackResult result={result} />
+    ) : null;
+  const shouldUseContentTabs = Boolean(transcriptContent && insightContent);
+  const contentArea = shouldUseContentTabs ? (
+    <section className="panel-section content-tabs-section" aria-label="Insight and transcript">
+      <div className="content-tabs" role="tablist" aria-label="Insight content">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeContentTab === "insight"}
+          onClick={() => setActiveContentTab("insight")}
+        >
+          Insight
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeContentTab === "transcript"}
+          onClick={() => setActiveContentTab("transcript")}
+        >
+          Transcript
+        </button>
+      </div>
+      <div role="tabpanel" aria-label={activeContentTab === "insight" ? "Insight" : "Transcript"}>
+        {activeContentTab === "insight" ? insightContent : transcriptContent}
+      </div>
+    </section>
+  ) : (
+    <>
+      {transcriptContent}
+      {insightContent}
+    </>
+  );
+
   const panelContent = (
     <>
       <section className="panel-section" aria-label="Generation settings">
@@ -353,7 +445,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
           </div>
         ) : null}
 
-        {transcriptStatus ? <div className="transcript-tip">{transcriptStatus}</div> : null}
+        {transcriptStatusNotice ? <div className="transcript-tip">{transcriptStatusNotice}</div> : null}
         {notice ? <div className="transcript-tip">{notice}</div> : null}
 
         <label className="form-control">
@@ -368,31 +460,33 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
           {isLoadingTranscript ? "Loading transcript..." : isGenerating ? "Generating..." : "Generate insight"}
         </button>
 
-        <button className="secondary-button" type="button" onClick={handleShowTranscript} disabled={isLoadingTranscript}>
-          {isTranscriptOpen ? "Refresh transcript" : "Show transcript"}
-        </button>
+        {!isInline ? (
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={handleShowTranscript}
+            disabled={isLoadingTranscript}
+          >
+            {isTranscriptOpen ? "Refresh transcript" : "Show transcript"}
+          </button>
+        ) : null}
       </section>
 
       {error ? <div className="error-box">{error}</div> : null}
 
-      {isTranscriptOpen ? (
-        <section className="panel-section" aria-label="Transcript">
-          <article className="insight-card transcript-card">
-            <h2>Transcript</h2>
-            {transcript ? (
-              <pre>{transcript.plainText}</pre>
-            ) : (
-              <p>{isLoadingTranscript ? "Loading transcript..." : "Transcript has not loaded yet."}</p>
-            )}
-          </article>
-        </section>
-      ) : null}
-
-      {result?.kind === "structured" ? <StructuredResult result={result} /> : null}
-      {result?.kind === "fallback" ? <FallbackResult result={result} /> : null}
+      {contentArea}
 
       {isInline ? (
         <div className="inline-result-actions" aria-label="Insight text controls">
+          <button
+            type="button"
+            aria-label={isTranscriptOpen ? "Refresh transcript" : "Show transcript"}
+            title={isTranscriptOpen ? "Refresh transcript" : "Show transcript"}
+            disabled={isLoadingTranscript}
+            onClick={handleShowTranscript}
+          >
+            T
+          </button>
           <button type="button" aria-label="Export insight" title="Export insight" onClick={handleExportInsight}>
             ⇩
           </button>

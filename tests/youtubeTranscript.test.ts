@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  extractTranscriptFromInnertube,
   extractTranscriptFromCaptionTracks,
   extractTranscriptFromPage,
   isYouTubeWatchPage
@@ -105,5 +106,148 @@ describe("youtubeTranscript", () => {
       ok: false,
       reason: "Caption track did not contain transcript text."
     });
+  });
+
+  it("extracts transcript from YouTube get_transcript endpoint when caption tracks are absent", async () => {
+    document.documentElement.innerHTML = `
+      <html>
+        <head><title>Innertube Transcript Talk - YouTube</title></head>
+        <body>
+          <h1>Innertube Transcript Talk</h1>
+          <script>
+            ytcfg.set({"INNERTUBE_API_KEY":"test-key","INNERTUBE_CLIENT_VERSION":"2.test","HL":"en","GL":"US","VISITOR_DATA":"visitor"});
+            var ytInitialData = {"engagementPanels":[{"engagementPanelSectionListRenderer":{"content":{"continuationItemRenderer":{"continuationEndpoint":{"commandMetadata":{"webCommandMetadata":{"apiUrl":"/youtubei/v1/get_transcript"}},"getTranscriptEndpoint":{"params":"transcript-params"}}}}}}]};
+          </script>
+        </body>
+      </html>
+    `;
+    const fetchTranscript = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        actions: [
+          {
+            updateEngagementPanelAction: {
+              content: {
+                transcriptRenderer: {
+                  body: {
+                    transcriptBodyRenderer: {
+                      cueGroups: [
+                        {
+                          transcriptCueGroupRenderer: {
+                            formattedStartOffset: { simpleText: "0:03" },
+                            cues: [{ transcriptCueRenderer: { cue: { simpleText: "Transcript from innertube." } } }]
+                          }
+                        },
+                        {
+                          transcriptCueGroupRenderer: {
+                            formattedStartOffset: { simpleText: "0:12" },
+                            cues: [{ transcriptCueRenderer: { cue: { runs: [{ text: "Second line." }] } } }]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      })
+    })) as unknown as typeof fetch;
+
+    const result = await extractTranscriptFromInnertube(document, watchUrl, fetchTranscript);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.transcript.segments).toEqual([
+        { start: "0:03", text: "Transcript from innertube." },
+        { start: "0:12", text: "Second line." }
+      ]);
+      expect(result.transcript.plainText).toContain("[0:03] Transcript from innertube.");
+    }
+    expect(fetchTranscript).toHaveBeenCalledWith(
+      "https://www.youtube.com/youtubei/v1/get_transcript?key=test-key",
+      expect.objectContaining({
+        method: "POST",
+        headers: expect.objectContaining({
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": "test-key",
+          "X-Youtube-Client-Version": "2.test"
+        }),
+        credentials: "include",
+        body: expect.stringContaining("\"params\":\"transcript-params\"")
+      })
+    );
+  });
+
+  it("extracts transcript endpoint params from YouTube runtime element data after SPA navigation", async () => {
+    document.documentElement.innerHTML = `
+      <html>
+        <head><title>Runtime Transcript Talk - YouTube</title></head>
+        <body>
+          <h1>Runtime Transcript Talk</h1>
+          <script>
+            ytcfg.set({"INNERTUBE_API_KEY":"test-key","INNERTUBE_CLIENT_VERSION":"2.test","HL":"en","GL":"US"});
+          </script>
+          <ytd-watch-flexy></ytd-watch-flexy>
+        </body>
+      </html>
+    `;
+    const watchFlexy = document.querySelector("ytd-watch-flexy") as HTMLElement & { data?: unknown };
+    watchFlexy.data = {
+      engagementPanels: [
+        {
+          engagementPanelSectionListRenderer: {
+            content: {
+              continuationItemRenderer: {
+                continuationEndpoint: {
+                  getTranscriptEndpoint: { params: "runtime-transcript-params" }
+                }
+              }
+            }
+          }
+        }
+      ]
+    };
+    const fetchTranscript = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        actions: [
+          {
+            updateEngagementPanelAction: {
+              content: {
+                transcriptRenderer: {
+                  body: {
+                    transcriptBodyRenderer: {
+                      cueGroups: [
+                        {
+                          transcriptCueGroupRenderer: {
+                            formattedStartOffset: { simpleText: "0:05" },
+                            cues: [{ transcriptCueRenderer: { cue: { simpleText: "Runtime transcript." } } }]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]
+      })
+    })) as unknown as typeof fetch;
+
+    const result = await extractTranscriptFromInnertube(document, watchUrl, fetchTranscript);
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.transcript.segments).toEqual([{ start: "0:05", text: "Runtime transcript." }]);
+    }
+    expect(fetchTranscript).toHaveBeenCalledWith(
+      "https://www.youtube.com/youtubei/v1/get_transcript?key=test-key",
+      expect.objectContaining({
+        body: expect.stringContaining("\"params\":\"runtime-transcript-params\"")
+      })
+    );
   });
 });

@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { generateInsightWithProvider } from "../src/providers/openAiCompatible";
+import { generateInsightStreamWithProvider } from "../src/providers/openAiCompatible";
 import { SidePanelApp } from "../src/sidepanel/SidePanelApp";
 import { saveProviderSettings } from "../src/storage/providerStorage";
 import { installChromeMock } from "../src/test/chromeMock";
 
 vi.mock("../src/providers/openAiCompatible", () => ({
-  generateInsightWithProvider: vi.fn()
+  generateInsightStreamWithProvider: vi.fn()
 }));
 
 beforeEach(async () => {
@@ -17,7 +17,7 @@ beforeEach(async () => {
     query: vi.fn(async () => [{ id: 10, url: "https://www.youtube.com/watch?v=abc123" }]),
     sendMessage: vi.fn()
   } as unknown as typeof chrome.tabs;
-  vi.mocked(generateInsightWithProvider).mockReset();
+  vi.mocked(generateInsightStreamWithProvider).mockReset();
 });
 
 describe("SidePanelApp", () => {
@@ -96,7 +96,7 @@ describe("SidePanelApp", () => {
       }))
     } as unknown as typeof chrome.tabs;
 
-    vi.mocked(generateInsightWithProvider).mockResolvedValue({
+    vi.mocked(generateInsightStreamWithProvider).mockResolvedValue({
       kind: "structured",
       rawText: "{}",
       data: {
@@ -122,7 +122,7 @@ describe("SidePanelApp", () => {
     expect(screen.getByText("Context matters")).toBeInTheDocument();
     expect(screen.getByText("Workflow shift")).toBeInTheDocument();
     expect(screen.getByText("Transcript may omit visual context.")).toBeInTheDocument();
-    expect(generateInsightWithProvider).toHaveBeenCalledWith(
+    expect(generateInsightStreamWithProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         outputLanguage: "en",
         transcript: expect.objectContaining({
@@ -132,7 +132,8 @@ describe("SidePanelApp", () => {
       expect.objectContaining({
         id: "provider-1",
         model: "gpt-4.1-mini"
-      })
+      }),
+      expect.any(Function)
     );
     expect(chrome.tabs.sendMessage).toHaveBeenCalledWith(10, {
       type: "VIDEO_INSIGHT_GET_TRANSCRIPT",
@@ -161,7 +162,7 @@ describe("SidePanelApp", () => {
     const intervalId = 1 as unknown as ReturnType<typeof window.setInterval>;
     const setIntervalSpy = vi.spyOn(window, "setInterval").mockImplementation(
       ((handler: TimerHandler, timeout?: number) => {
-        if (timeout === 1000 && typeof handler === "function") {
+        if (timeout === 1000 && typeof handler === "function" && !pollActiveTab) {
           pollActiveTab = handler as () => void;
         }
         return intervalId;
@@ -186,7 +187,7 @@ describe("SidePanelApp", () => {
       }))
     } as unknown as typeof chrome.tabs;
 
-    vi.mocked(generateInsightWithProvider).mockResolvedValue({
+    vi.mocked(generateInsightStreamWithProvider).mockResolvedValue({
       kind: "structured",
       rawText: "{}",
       data: {

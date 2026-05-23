@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { generateInsightWithProvider } from "../providers/openAiCompatible";
+import { generateInsightStreamWithProvider } from "../providers/openAiCompatible";
 import type { InsightPanelContext } from "./insightPanelTypes";
 import type { ModelProviderConfig, OutputLanguage, ParsedInsightResult, TranscriptPayload } from "../shared/types";
 import { getProviderSettings, saveProviderSettings, selectActiveProvider } from "../storage/providerStorage";
@@ -99,6 +99,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   const [language, setLanguage] = useState<OutputLanguage>("zh-CN");
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generationElapsedSeconds, setGenerationElapsedSeconds] = useState(0);
   const [isLoadingTranscript, setIsLoadingTranscript] = useState(false);
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -112,6 +113,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   );
   const [transcript, setTranscript] = useState<TranscriptPayload | undefined>();
   const [result, setResult] = useState<ParsedInsightResult | undefined>();
+  const [streamingText, setStreamingText] = useState<string | undefined>();
 
   useEffect(() => {
     isMountedRef.current = true;
@@ -202,6 +204,22 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
   }, [transcriptStatusNotice]);
 
   useEffect(() => {
+    if (!isGenerating) {
+      setGenerationElapsedSeconds(0);
+      return;
+    }
+
+    setGenerationElapsedSeconds(0);
+    const intervalId = window.setInterval(() => {
+      setGenerationElapsedSeconds((currentSeconds) => currentSeconds + 1);
+    }, 1000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [isGenerating]);
+
+  useEffect(() => {
     let isCurrentVideo = true;
     requestIdRef.current += 1;
     setIsGenerating(false);
@@ -215,6 +233,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
     setNotice(undefined);
     setTranscriptStatusNotice(context.getTranscriptStatus?.());
     setResult(undefined);
+    setStreamingText(undefined);
 
     void getSavedInsight(context.videoId).then((savedInsight) => {
       if (!isMountedRef.current || !isCurrentVideo || !savedInsight) {
@@ -268,15 +287,22 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
     setError(undefined);
     setNotice(undefined);
     setResult(undefined);
+    setStreamingText(undefined);
 
     try {
       const loadedTranscript = await loadTranscript();
-      const generatedInsight = await generateInsightWithProvider(
+      const generatedInsight = await generateInsightStreamWithProvider(
         { transcript: loadedTranscript, outputLanguage: language },
-        activeProvider
+        activeProvider,
+        (_delta, fullText) => {
+          if (isMountedRef.current && requestIdRef.current === requestId) {
+            setStreamingText(fullText);
+          }
+        }
       );
       if (isMountedRef.current && requestIdRef.current === requestId) {
         setResult(generatedInsight);
+        setStreamingText(undefined);
         if (context.videoId) {
           await saveInsightRecord({
             videoId: context.videoId,
@@ -291,6 +317,7 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
     } catch (generateError: unknown) {
       if (isMountedRef.current && requestIdRef.current === requestId) {
         setError(getErrorMessage(generateError));
+        setStreamingText(undefined);
       }
     } finally {
       if (isMountedRef.current && requestIdRef.current === requestId) {
@@ -395,7 +422,14 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
     </section>
   ) : null;
   const insightContent =
-    result?.kind === "structured" ? (
+    streamingText ? (
+      <section className="panel-section" aria-label="Streaming insight" aria-live="polite">
+        <article className="insight-card streaming-insight-card">
+          <h2>Generating insight</h2>
+          <pre>{streamingText}</pre>
+        </article>
+      </section>
+    ) : result?.kind === "structured" ? (
       <StructuredResult result={result} />
     ) : result?.kind === "fallback" ? (
       <FallbackResult result={result} />
@@ -457,7 +491,11 @@ export function InsightPanel({ context }: { context: InsightPanelContext }) {
         </label>
 
         <button className="primary-button" type="button" disabled={!canGenerate} onClick={handleGenerateInsight}>
-          {isLoadingTranscript ? "Loading transcript..." : isGenerating ? "Generating..." : "Generate insight"}
+          {isLoadingTranscript
+            ? "Loading transcript..."
+            : isGenerating
+              ? `Generating... ${generationElapsedSeconds}s`
+              : "Generate insight"}
         </button>
 
         {!isInline ? (

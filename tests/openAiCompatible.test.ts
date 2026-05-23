@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { generateInsightWithProvider } from "../src/providers/openAiCompatible";
+import { generateInsightStreamWithProvider, generateInsightWithProvider } from "../src/providers/openAiCompatible";
 import type { InsightInput, ModelProviderConfig } from "../src/shared/types";
 
 const provider: ModelProviderConfig = {
@@ -224,5 +224,85 @@ describe("generateInsightWithProvider", () => {
     await expect(generateInsightWithProvider(input, provider)).rejects.toThrow(
       "SiliconFlow returned malformed JSON."
     );
+  });
+});
+
+describe("generateInsightStreamWithProvider", () => {
+  function streamResponse(chunks: string[]): Response {
+    const encoder = new TextEncoder();
+
+    return new Response(
+      new ReadableStream({
+        start(controller) {
+          for (const chunk of chunks) {
+            controller.enqueue(encoder.encode(chunk));
+          }
+          controller.close();
+        }
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "text/event-stream" }
+      }
+    );
+  }
+
+  it("streams delta content and parses the final insight", async () => {
+    const deltas = [
+      "{\"summary\":\"实时",
+      "洞察\",\"takeaways\":[]}"
+    ];
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      streamResponse([
+        `data: ${JSON.stringify({ choices: [{ delta: { content: deltas[0] } }] })}\n\n`,
+        `data: ${JSON.stringify({ choices: [{ delta: { content: deltas[1] } }] })}\n\n`,
+        "data: [DONE]\n\n"
+      ])
+    );
+    const onDelta = vi.fn();
+
+    const result = await generateInsightStreamWithProvider(input, provider, onDelta);
+
+    const body = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    expect(body.stream).toBe(true);
+    expect(onDelta).toHaveBeenNthCalledWith(1, deltas[0], deltas[0]);
+    expect(onDelta).toHaveBeenNthCalledWith(2, deltas[1], deltas.join(""));
+    expect(result.kind).toBe("structured");
+    if (result.kind === "structured") {
+      expect(result.data.summary).toBe("实时洞察");
+    }
+  });
+
+  it("falls back to non-streaming generation when the provider returns a regular JSON response", async () => {
+    const fetchMock = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ summary: "普通响应", takeaways: [] }) } }]
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            choices: [{ message: { content: JSON.stringify({ summary: "回退成功", takeaways: [] }) } }]
+          }),
+          { status: 200, headers: { "Content-Type": "application/json" } }
+        )
+      );
+
+    const result = await generateInsightStreamWithProvider(input, provider, vi.fn());
+
+    const firstBody = JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body));
+    const secondBody = JSON.parse(String(fetchMock.mock.calls[1]?.[1]?.body));
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(firstBody.stream).toBe(true);
+    expect(secondBody).not.toHaveProperty("stream");
+    expect(result.kind).toBe("structured");
+    if (result.kind === "structured") {
+      expect(result.data.summary).toBe("回退成功");
+    }
   });
 });

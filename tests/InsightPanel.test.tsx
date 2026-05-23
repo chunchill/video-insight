@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { generateInsightWithProvider } from "../src/providers/openAiCompatible";
+import { generateInsightStreamWithProvider } from "../src/providers/openAiCompatible";
 import { InsightPanel } from "../src/insight/InsightPanel";
 import type { InsightPanelContext } from "../src/insight/insightPanelTypes";
 import { saveProviderSettings } from "../src/storage/providerStorage";
@@ -9,7 +9,7 @@ import { installChromeMock } from "../src/test/chromeMock";
 import type { ParsedInsightResult, TranscriptPayload } from "../src/shared/types";
 
 vi.mock("../src/providers/openAiCompatible", () => ({
-  generateInsightWithProvider: vi.fn()
+  generateInsightStreamWithProvider: vi.fn()
 }));
 
 const transcript: TranscriptPayload = {
@@ -66,7 +66,7 @@ beforeEach(async () => {
   vi.useRealTimers();
   installChromeMock();
   await chrome.storage.local.clear();
-  vi.mocked(generateInsightWithProvider).mockReset();
+  vi.mocked(generateInsightStreamWithProvider).mockReset();
 });
 
 afterEach(() => {
@@ -77,7 +77,7 @@ describe("InsightPanel", () => {
   it("resets result and error when context video changes", async () => {
     await saveProvider();
     const getTranscript = vi.fn(async () => transcript);
-    vi.mocked(generateInsightWithProvider)
+    vi.mocked(generateInsightStreamWithProvider)
       .mockResolvedValueOnce(structuredInsight)
       .mockRejectedValueOnce(new Error("Transcript unavailable"));
 
@@ -98,7 +98,7 @@ describe("InsightPanel", () => {
 
   it("renders transcript support status and generated structured insight", async () => {
     await saveProvider();
-    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+    vi.mocked(generateInsightStreamWithProvider).mockResolvedValue(structuredInsight);
 
     render(
       <InsightPanel
@@ -116,7 +116,7 @@ describe("InsightPanel", () => {
     expect(screen.getByText("Context matters")).toBeInTheDocument();
     expect(screen.getByText("Workflow shift")).toBeInTheDocument();
     expect(screen.getByText("Transcript may omit visual context.")).toBeInTheDocument();
-    expect(generateInsightWithProvider).toHaveBeenCalledWith(
+    expect(generateInsightStreamWithProvider).toHaveBeenCalledWith(
       expect.objectContaining({
         outputLanguage: "zh-CN",
         transcript: expect.objectContaining({
@@ -126,13 +126,14 @@ describe("InsightPanel", () => {
       expect.objectContaining({
         id: "provider-1",
         model: "gpt-4.1-mini"
-      })
+      }),
+      expect.any(Function)
     );
   });
 
   it("hides transient transcript and success notices after a short delay", async () => {
     await saveProvider();
-    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+    vi.mocked(generateInsightStreamWithProvider).mockResolvedValue(structuredInsight);
 
     render(
       <InsightPanel
@@ -158,7 +159,7 @@ describe("InsightPanel", () => {
 
   it("loads and displays transcript before generation", async () => {
     await saveProvider();
-    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+    vi.mocked(generateInsightStreamWithProvider).mockResolvedValue(structuredInsight);
     const getTranscript = vi.fn(async () => transcript);
 
     render(<InsightPanel context={context({ source: "inline", getTranscript })} />);
@@ -173,9 +174,69 @@ describe("InsightPanel", () => {
     expect(getTranscript).toHaveBeenCalledTimes(2);
   });
 
+  it("shows streaming model output before rendering the structured insight", async () => {
+    await saveProvider();
+    let resolveInsight: (result: ParsedInsightResult) => void = () => {};
+    vi.mocked(generateInsightStreamWithProvider).mockImplementation(async (_input, _provider, onDelta) => {
+      onDelta("{\"summary\":\"Streaming", "{\"summary\":\"Streaming");
+      return new Promise((resolve) => {
+        resolveInsight = resolve;
+      });
+    });
+
+    render(<InsightPanel context={context({ source: "inline" })} />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Generate insight" }));
+
+    expect(await screen.findByText("Generating insight")).toBeInTheDocument();
+    expect(screen.getByText("{\"summary\":\"Streaming")).toBeInTheDocument();
+
+    resolveInsight(structuredInsight);
+
+    expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
+    expect(screen.queryByText("{\"summary\":\"Streaming")).not.toBeInTheDocument();
+  });
+
+  it("shows elapsed generation time in the generate button", async () => {
+    await saveProvider();
+    let resolveInsight: (result: ParsedInsightResult) => void = () => {};
+    vi.mocked(generateInsightStreamWithProvider).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveInsight = resolve;
+        })
+    );
+
+    render(<InsightPanel context={context({ source: "inline" })} />);
+    const generateButton = await screen.findByRole("button", { name: "Generate insight" });
+
+    vi.useFakeTimers();
+    await act(async () => {
+      fireEvent.click(generateButton);
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(screen.getByRole("button", { name: "Generating... 0s" })).toBeDisabled();
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(3000);
+    });
+
+    expect(screen.getByRole("button", { name: "Generating... 3s" })).toBeDisabled();
+
+    await act(async () => {
+      resolveInsight(structuredInsight);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    vi.useRealTimers();
+
+    expect(await screen.findByRole("button", { name: "Generate insight" })).toBeEnabled();
+  });
+
   it("uses tabs when insight and transcript are both open", async () => {
     await saveProvider();
-    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+    vi.mocked(generateInsightStreamWithProvider).mockResolvedValue(structuredInsight);
     const getTranscript = vi.fn(async () => transcript);
 
     render(<InsightPanel context={context({ source: "inline", getTranscript })} />);
@@ -223,7 +284,7 @@ describe("InsightPanel", () => {
   it("ignores stale generation results after video changes", async () => {
     await saveProvider();
     let resolveInsight: (result: ParsedInsightResult) => void = () => {};
-    vi.mocked(generateInsightWithProvider).mockReturnValue(
+    vi.mocked(generateInsightStreamWithProvider).mockReturnValue(
       new Promise((resolve) => {
         resolveInsight = resolve;
       })
@@ -318,7 +379,7 @@ describe("InsightPanel", () => {
 
   it("restores saved insight when returning to the same video", async () => {
     await saveProvider();
-    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+    vi.mocked(generateInsightStreamWithProvider).mockResolvedValue(structuredInsight);
 
     const { unmount } = render(<InsightPanel context={context({ source: "inline", videoId: "abc123" })} />);
     await userEvent.click(await screen.findByRole("button", { name: "Generate insight" }));

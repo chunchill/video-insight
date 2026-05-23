@@ -6,13 +6,18 @@ import type { TranscriptPayload } from "../shared/types";
 import { ensureTranscriptVisible, getTranscriptSupportStatus } from "./transcriptAutomation";
 import { extractTranscriptFromPage, loadTranscriptFromPage } from "./youtubeTranscript";
 
-async function getInlineTranscript(): Promise<TranscriptPayload> {
+export async function getInlineTranscript(): Promise<TranscriptPayload> {
   const directResult = await loadTranscriptFromPage(document, new URL(window.location.href));
   if (directResult.ok) {
     return directResult.transcript;
   }
 
   const ensureResult = await ensureTranscriptVisible(document);
+  const postOpenResult = await loadTranscriptFromPage(document, new URL(window.location.href));
+  if (postOpenResult.ok) {
+    return postOpenResult.transcript;
+  }
+
   if (!ensureResult.ok) {
     throw new Error(ensureResult.reason || directResult.reason);
   }

@@ -17,6 +17,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
     if (message?.autoOpenTranscript) {
       const ensureResult = await ensureTranscriptVisible(document);
+      const postOpenResult = await loadTranscriptFromPage(document, new URL(window.location.href));
+      if (postOpenResult.ok) {
+        sendResponse(postOpenResult);
+        return;
+      }
+
       if (!ensureResult.ok) {
         sendResponse({ ok: false, reason: ensureResult.reason || directResult.reason });
         return;

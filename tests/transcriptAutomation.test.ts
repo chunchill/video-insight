@@ -26,6 +26,34 @@ describe("transcriptAutomation", () => {
     });
   });
 
+  it("detects YouTube modern transcript segment view models", async () => {
+    document.body.innerHTML = `
+      <transcript-segment-view-model>
+        <div aria-hidden="true" class="ytwTranscriptSegmentViewModelTimestamp">0:08</div>
+        <div class="ytwTranscriptSegmentViewModelTimestampA11yLabel">8 seconds</div>
+        <span class="ytAttributedStringHost" role="text">And go to a demo.</span>
+      </transcript-segment-view-model>
+      <transcript-segment-view-model>
+        <div aria-hidden="true" class="ytwTranscriptSegmentViewModelTimestamp">0:11</div>
+        <div class="ytwTranscriptSegmentViewModelTimestampA11yLabel">11 seconds</div>
+        <span class="ytAttributedStringHost" role="text">I'm Albert and before joining Cursor I spent time doing kernel development work.</span>
+      </transcript-segment-view-model>
+    `;
+
+    expect(findTranscriptSegments(document)).toEqual([
+      { start: "0:08", text: "And go to a demo." },
+      {
+        start: "0:11",
+        text: "I'm Albert and before joining Cursor I spent time doing kernel development work."
+      }
+    ]);
+    await expect(ensureTranscriptVisible(document, { timeoutMs: 10, pollMs: 5 })).resolves.toEqual({
+      ok: true,
+      status: "available"
+    });
+    expect(getTranscriptSupportStatus(document)).toBe("Transcript available");
+  });
+
   it("clicks Chinese More and 内容转文字 when transcript is hidden", async () => {
     document.body.innerHTML = chineseTranscriptButtonHtml;
     const moreButton = document.querySelector<HTMLButtonElement>("[data-testid='more-button']")!;

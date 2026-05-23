@@ -118,12 +118,27 @@ async function waitForClickableByText(
 }
 
 export function findTranscriptSegments(doc: Document): TranscriptSegment[] {
-  return Array.from(doc.querySelectorAll("ytd-transcript-segment-renderer"))
-    .map<TranscriptSegment | undefined>((segment) => {
-      const start = segment.querySelector(".segment-timestamp")?.textContent?.trim();
-      const text = segment.querySelector(".segment-text")?.textContent?.trim();
-      return text ? (start ? { start, text } : { text }) : undefined;
-    })
+  const legacySegments = Array.from(doc.querySelectorAll("ytd-transcript-segment-renderer")).map<
+    TranscriptSegment | undefined
+  >((segment) => {
+    const start = segment.querySelector(".segment-timestamp")?.textContent?.trim();
+    const text = segment.querySelector(".segment-text")?.textContent?.trim();
+    return text ? (start ? { start, text } : { text }) : undefined;
+  });
+
+  const modernSegments = Array.from(doc.querySelectorAll("transcript-segment-view-model")).map<
+    TranscriptSegment | undefined
+  >((segment) => {
+    const start = segment
+      .querySelector(".ytwTranscriptSegmentViewModelTimestamp[aria-hidden='true'], .ytwTranscriptSegmentViewModelTimestamp")
+      ?.textContent?.trim();
+    const text = segment
+      .querySelector("span[role='text'], .ytAttributedStringHost[role='text'], .ytAttributedStringHost")
+      ?.textContent?.trim();
+    return text ? (start ? { start, text } : { text }) : undefined;
+  });
+
+  return [...legacySegments, ...modernSegments]
     .filter((segment): segment is TranscriptSegment => Boolean(segment));
 }
 

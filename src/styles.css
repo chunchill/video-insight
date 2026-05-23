@@ -111,9 +111,9 @@ textarea {
 }
 
 .primary-button,
+.secondary-button,
 .notice button {
   min-height: 38px;
-  border: 0;
   border-radius: 6px;
   padding: 8px 12px;
   font-weight: 700;
@@ -122,8 +122,15 @@ textarea {
 
 .primary-button {
   width: 100%;
+  border: 0;
   background: var(--video-insight-primary);
   color: #fff;
+}
+
+.secondary-button {
+  border: 1px solid #cbd3e1;
+  background: #fff;
+  color: var(--video-insight-text);
 }
 
 .primary-button:disabled {

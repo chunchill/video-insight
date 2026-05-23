@@ -80,7 +80,7 @@ export const INLINE_PANEL_CSS = `
 #video-insight-inline-root .app-header {
   position: relative;
   min-height: 38px;
-  padding-right: 42px;
+  padding-right: 78px;
 }
 
 #video-insight-inline-root .app-header h1 {
@@ -99,9 +99,15 @@ export const INLINE_PANEL_CSS = `
   top: 0;
   right: 0;
   z-index: 2;
+  display: flex;
+  gap: 6px;
 }
 
-#video-insight-inline-root .inline-settings-button {
+#video-insight-inline-root .inline-panel-shell[data-inline-collapsed="true"][data-settings-open="true"] {
+  padding-bottom: 152px;
+}
+
+#video-insight-inline-root .inline-header-icon-button {
   width: 32px;
   min-width: 32px;
   height: 32px;
@@ -115,8 +121,8 @@ export const INLINE_PANEL_CSS = `
   line-height: 1;
 }
 
-#video-insight-inline-root .inline-settings-button:hover,
-#video-insight-inline-root .inline-settings-button[aria-expanded="true"] {
+#video-insight-inline-root .inline-header-icon-button:hover,
+#video-insight-inline-root .inline-header-icon-button[aria-expanded="true"] {
   border-color: #b6c2d6;
   background: #eef3ff;
 }
@@ -146,13 +152,22 @@ export const INLINE_PANEL_CSS = `
   font-weight: 700;
 }
 
-#video-insight-inline-root .font-size-controls {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+#video-insight-inline-root .inline-result-actions {
+  position: sticky;
+  right: 8px;
+  bottom: 8px;
+  justify-self: end;
+  display: inline-flex;
+  gap: 6px;
+  margin-top: 12px;
+  border: 1px solid #dbe1ec;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: 0 8px 20px rgba(23, 32, 51, 0.12);
+  padding: 4px;
 }
 
-#video-insight-inline-root .font-size-controls button {
+#video-insight-inline-root .inline-result-actions button {
   width: 30px;
   min-width: 30px;
   height: 30px;
@@ -167,15 +182,7 @@ export const INLINE_PANEL_CSS = `
   padding: 0;
 }
 
-#video-insight-inline-root .font-size-value {
-  flex: 1;
-  color: #313b4f;
-  font-size: 13px;
-  font-weight: 700;
-  text-align: center;
-}
-
-#video-insight-inline-root .font-size-controls button:disabled {
+#video-insight-inline-root .inline-result-actions button:disabled {
   color: #98a5bd;
   cursor: not-allowed;
 }
@@ -183,7 +190,6 @@ export const INLINE_PANEL_CSS = `
 #video-insight-inline-root .settings-menu-action {
   width: 100%;
   min-height: 34px;
-  margin-top: 10px;
   border: 1px solid #cbd3e1;
   border-radius: 6px;
   background: #f8fafc;
@@ -191,6 +197,15 @@ export const INLINE_PANEL_CSS = `
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
+}
+
+#video-insight-inline-root .visually-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
 }
 
 #video-insight-inline-root .panel-section {
@@ -228,9 +243,9 @@ export const INLINE_PANEL_CSS = `
 }
 
 #video-insight-inline-root .primary-button,
+#video-insight-inline-root .secondary-button,
 #video-insight-inline-root .notice button {
   min-height: 38px;
-  border: 0;
   border-radius: 6px;
   padding: 8px 12px;
   font-weight: 700;
@@ -239,8 +254,15 @@ export const INLINE_PANEL_CSS = `
 
 #video-insight-inline-root .primary-button {
   width: 100%;
+  border: 0;
   background: #2457d6;
   color: #fff;
+}
+
+#video-insight-inline-root .secondary-button {
+  border: 1px solid #cbd3e1;
+  background: #fff;
+  color: #172033;
 }
 
 #video-insight-inline-root .primary-button:disabled {
@@ -311,7 +333,7 @@ export const INLINE_PANEL_CSS = `
 
 @media (max-width: 720px) {
   #video-insight-inline-root .app-header {
-    padding-right: 40px;
+    padding-right: 76px;
   }
 
   #video-insight-inline-root .inline-settings-menu {

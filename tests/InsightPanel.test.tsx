@@ -124,6 +124,23 @@ describe("InsightPanel", () => {
     );
   });
 
+  it("loads and displays transcript before generation", async () => {
+    await saveProvider();
+    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+    const getTranscript = vi.fn(async () => transcript);
+
+    render(<InsightPanel context={context({ source: "inline", getTranscript })} />);
+
+    await userEvent.click(await screen.findByRole("button", { name: "Show transcript" }));
+
+    expect(await screen.findByText("[0:03] AI systems change workflows.")).toBeInTheDocument();
+    expect(getTranscript).toHaveBeenCalledTimes(1);
+
+    await userEvent.click(screen.getByRole("button", { name: "Generate insight" }));
+    expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
+    expect(getTranscript).toHaveBeenCalledTimes(2);
+  });
+
   it("uses context settings action when no provider exists", async () => {
     const openSettings = vi.fn();
 
@@ -158,9 +175,7 @@ describe("InsightPanel", () => {
     await saveProvider();
     const { container } = render(<InsightPanel context={context({ source: "inline" })} />);
 
-    await userEvent.click(await screen.findByRole("button", { name: "Panel settings" }));
-    expect(screen.getByRole("menu", { name: "Panel settings" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Collapse panel" })).toBeInTheDocument();
+    expect(await screen.findByRole("button", { name: "Collapse panel" })).toBeInTheDocument();
     expect(container.querySelector(".inline-panel-body")).toBeTruthy();
     expect(screen.getByRole("button", { name: "Generate insight" })).toBeInTheDocument();
 
@@ -170,7 +185,6 @@ describe("InsightPanel", () => {
     expect(screen.queryByRole("button", { name: "Generate insight" })).not.toBeInTheDocument();
     expect(container.querySelector(".inline-panel-body")).toBeNull();
 
-    await userEvent.click(screen.getByRole("button", { name: "Panel settings" }));
     await userEvent.click(screen.getByRole("button", { name: "Expand panel" }));
 
     expect(screen.getByRole("button", { name: "Generate insight" })).toBeInTheDocument();
@@ -185,18 +199,15 @@ describe("InsightPanel", () => {
     expect(settingsButton).toHaveAttribute("title", "Panel settings");
     expect(settingsButton).toHaveAttribute("aria-expanded", "false");
     expect(settingsButton).toHaveTextContent("⚙");
-    expect(screen.queryByRole("button", { name: "Smaller text" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Collapse panel" })).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Smaller text" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Collapse panel" })).toBeInTheDocument();
 
     await userEvent.click(settingsButton);
 
     expect(settingsButton).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByRole("menu", { name: "Panel settings" })).toBeInTheDocument();
-    const smallerButton = screen.getByRole("button", { name: "Smaller text" });
-    const largerButton = screen.getByRole("button", { name: "Larger text" });
-    expect(smallerButton).toHaveAttribute("title", "Smaller text");
-    expect(largerButton).toHaveAttribute("title", "Larger text");
-    expect(screen.getByText("Large")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Export model configuration" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Import model configuration" })).toBeInTheDocument();
 
     await userEvent.click(document.body);
 
@@ -218,7 +229,6 @@ describe("InsightPanel", () => {
 
     expect(shell.dataset.inlineFontSize).toBe("large");
 
-    await userEvent.click(screen.getByRole("button", { name: "Panel settings" }));
     await userEvent.click(screen.getByRole("button", { name: "Larger text" }));
 
     expect(shell.dataset.inlineFontSize).toBe("xl");
@@ -235,5 +245,20 @@ describe("InsightPanel", () => {
     expect(screen.queryByRole("button", { name: "Panel settings" })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Smaller text" })).not.toBeInTheDocument();
     expect(container.querySelector(".inline-panel-body")).toBeNull();
+  });
+
+  it("restores saved insight when returning to the same video", async () => {
+    await saveProvider();
+    vi.mocked(generateInsightWithProvider).mockResolvedValue(structuredInsight);
+
+    const { unmount } = render(<InsightPanel context={context({ source: "inline", videoId: "abc123" })} />);
+    await userEvent.click(await screen.findByRole("button", { name: "Generate insight" }));
+    expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
+    unmount();
+
+    render(<InsightPanel context={context({ source: "inline", videoId: "abc123" })} />);
+
+    expect(await screen.findByText("AI changes complete workflows.")).toBeInTheDocument();
+    expect(screen.getByText("Saved insight restored for this video.")).toBeInTheDocument();
   });
 });

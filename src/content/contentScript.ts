@@ -1,7 +1,7 @@
 import { isInlinePanelMounted, mountInlinePanel, unmountInlinePanel } from "./inlineMount";
 import { ensureTranscriptVisible } from "./transcriptAutomation";
 import { createYouTubePageObserver } from "./youtubePageObserver";
-import { extractTranscriptFromPage } from "./youtubeTranscript";
+import { extractTranscriptFromPage, loadTranscriptFromPage } from "./youtubeTranscript";
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message?.type !== "VIDEO_INSIGHT_GET_TRANSCRIPT") {
@@ -9,10 +9,16 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   }
 
   void (async () => {
+    const directResult = await loadTranscriptFromPage(document, new URL(window.location.href));
+    if (directResult.ok) {
+      sendResponse(directResult);
+      return;
+    }
+
     if (message?.autoOpenTranscript) {
       const ensureResult = await ensureTranscriptVisible(document);
       if (!ensureResult.ok) {
-        sendResponse({ ok: false, reason: ensureResult.reason });
+        sendResponse({ ok: false, reason: directResult.reason || ensureResult.reason });
         return;
       }
     }

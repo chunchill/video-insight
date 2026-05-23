@@ -4,12 +4,17 @@ import type { InsightPanelContext } from "../insight/insightPanelTypes";
 import { VIDEO_INSIGHT_OPEN_OPTIONS } from "../shared/extensionMessages";
 import type { TranscriptPayload } from "../shared/types";
 import { ensureTranscriptVisible, getTranscriptSupportStatus } from "./transcriptAutomation";
-import { extractTranscriptFromPage } from "./youtubeTranscript";
+import { extractTranscriptFromPage, loadTranscriptFromPage } from "./youtubeTranscript";
 
 async function getInlineTranscript(): Promise<TranscriptPayload> {
+  const directResult = await loadTranscriptFromPage(document, new URL(window.location.href));
+  if (directResult.ok) {
+    return directResult.transcript;
+  }
+
   const ensureResult = await ensureTranscriptVisible(document);
   if (!ensureResult.ok) {
-    throw new Error(ensureResult.reason);
+    throw new Error(directResult.reason || ensureResult.reason);
   }
 
   const extractionResult = extractTranscriptFromPage(document, new URL(window.location.href));

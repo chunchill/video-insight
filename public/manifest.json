@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Video Insight",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Generate structured insights from YouTube video transcripts.",
   "permissions": ["activeTab", "scripting", "storage", "sidePanel", "tabs"],
   "host_permissions": ["https://www.youtube.com/*", "https://*.youtube.com/*", "<all_urls>"],

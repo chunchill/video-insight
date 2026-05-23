@@ -53,6 +53,7 @@ describe("inlineMount", () => {
     expect(style?.textContent).toContain("overflow-y: auto");
     expect(style?.textContent).toContain('[data-inline-font-size="xl"]');
     expect(style?.textContent).toContain(".inline-settings-menu");
+    expect(style?.textContent).toContain('[data-inline-collapsed="true"][data-settings-open="true"]');
     expect(style?.textContent).toContain("position: absolute");
     expect(style?.textContent).toContain("right: 0");
     expect(style?.textContent).not.toMatch(/(^|\s)(:root|body|\*)\s*\{/);
